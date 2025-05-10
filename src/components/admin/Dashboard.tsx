@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, LineChart } from '@/components/ui/chart';
+import { BarChart as RechartsBarChart, LineChart as RechartsLineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Dashboard = () => {
   // For demo purposes, generate mock data
@@ -82,13 +82,17 @@ const Dashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LineChart
-                  data={weeklyData}
-                  categories={['total']}
-                  colors={['#8B5CF6']}
-                  yAxisWidth={40}
-                  className="aspect-[4/3]"
-                />
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsLineChart data={weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="total" stroke="#8B5CF6" strokeWidth={2} />
+                    </RechartsLineChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
             
@@ -100,14 +104,17 @@ const Dashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <BarChart
-                  data={locationData}
-                  categories={['total']}
-                  colors={['#8B5CF6']}
-                  layout="vertical"
-                  yAxisWidth={100}
-                  className="aspect-[4/3]"
-                />
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsBarChart layout="vertical" data={locationData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="name" type="category" width={100} />
+                      <Tooltip />
+                      <Bar dataKey="total" fill="#8B5CF6" />
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>

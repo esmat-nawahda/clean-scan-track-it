@@ -4,7 +4,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import Header from '@/components/navigation/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, QrCode, Database, Users, Settings } from 'lucide-react';
+import { Check, QrCode, Database, Users, Settings, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -102,7 +102,7 @@ const Index = () => {
                 <Card className="glass-effect hover-scale">
                   <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
                     <div className="p-3 rounded-full bg-primary/10">
-                      <File className="w-6 h-6 text-primary" />
+                      <FileText className="w-6 h-6 text-primary" />
                     </div>
                     <h3 className="text-xl font-bold">Export Reports</h3>
                     <p className="text-muted-foreground">
