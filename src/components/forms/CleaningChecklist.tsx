@@ -8,13 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import StaffSelector from '@/components/admin/StaffSelector';
-import { Check } from 'lucide-react';
+import { Check, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChecklistItem {
   id: string;
   label: string;
   checked: boolean;
+  color: string;
 }
 
 const locationNameMap: Record<string, string> = {
@@ -36,11 +37,11 @@ const CleaningChecklist = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
-    { id: 'floors', label: 'Floors cleaned and mopped', checked: false },
-    { id: 'surfaces', label: 'All surfaces wiped and sanitized', checked: false },
-    { id: 'trash', label: 'Trash emptied and replaced', checked: false },
-    { id: 'supplies', label: 'Supplies restocked', checked: false },
-    { id: 'fixtures', label: 'Fixtures cleaned and polished', checked: false },
+    { id: 'floors', label: 'Floors cleaned and mopped', checked: false, color: 'bg-blue-100 border-blue-300' },
+    { id: 'surfaces', label: 'All surfaces wiped and sanitized', checked: false, color: 'bg-green-100 border-green-300' },
+    { id: 'trash', label: 'Trash emptied and replaced', checked: false, color: 'bg-amber-100 border-amber-300' },
+    { id: 'supplies', label: 'Supplies restocked', checked: false, color: 'bg-purple-100 border-purple-300' },
+    { id: 'fixtures', label: 'Fixtures cleaned and polished', checked: false, color: 'bg-pink-100 border-pink-300' },
   ]);
 
   const toggleChecklistItem = (id: string) => {
@@ -99,30 +100,36 @@ const CleaningChecklist = () => {
           
           <div className="space-y-4">
             <Label className="text-lg font-medium">Cleaning Checklist</Label>
-            {checklist.map((item) => (
-              <div 
-                key={item.id} 
-                className="flex items-start space-x-3"
-                onClick={() => toggleChecklistItem(item.id)}
-              >
+            <div className="space-y-4">
+              {checklist.map((item) => (
                 <div 
+                  key={item.id} 
+                  onClick={() => toggleChecklistItem(item.id)}
                   className={cn(
-                    "flex-shrink-0 w-7 h-7 mt-0.5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all duration-200",
-                    item.checked 
-                      ? "bg-primary border-primary text-primary-foreground" 
-                      : "border-gray-300 hover:border-primary/70"
+                    item.color,
+                    "p-4 rounded-lg border-2 transition-all duration-200 shadow-sm",
+                    item.checked ? "border-primary" : "",
+                    "transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                   )}
                 >
-                  {item.checked && <Check className="h-5 w-5" strokeWidth={3} />}
+                  <div className="flex items-center">
+                    <div 
+                      className={cn(
+                        "flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center mr-4 transition-all duration-300",
+                        item.checked 
+                          ? "bg-primary border-primary text-primary-foreground" 
+                          : "bg-white border-gray-300"
+                      )}
+                    >
+                      {item.checked && <CheckCheck className="h-6 w-6" strokeWidth={2.5} />}
+                    </div>
+                    <span className="text-lg font-medium">
+                      {item.label}
+                    </span>
+                  </div>
                 </div>
-                <label
-                  htmlFor={item.id}
-                  className="text-base leading-tight cursor-pointer select-none"
-                >
-                  {item.label}
-                </label>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
           
           <div className="space-y-2">
