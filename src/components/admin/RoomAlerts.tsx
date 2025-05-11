@@ -12,6 +12,7 @@ export interface Room {
   lastCleaned?: string;
   nextCleaningDue?: string;
   status: 'clean' | 'needs-cleaning' | 'overdue';
+  qrCodeUrl?: string;  // Add this property
 }
 
 interface RoomAlertsProps {
