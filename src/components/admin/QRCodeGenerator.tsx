@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { Printer } from 'lucide-react';
 
 interface QRCodeGeneratorProps {
@@ -53,11 +53,10 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ value, size = 200, lo
 
   return (
     <Card className="p-6 flex flex-col items-center gap-4">
-      <QRCode 
+      <QRCodeCanvas 
         id="qr-code-canvas"
         value={value} 
         size={size} 
-        renderAs="canvas"
         includeMargin
         level="H"
       />
