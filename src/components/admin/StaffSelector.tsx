@@ -33,7 +33,13 @@ const staffMembers = [
   { id: 10, name: 'Sophia Thomas', position: 'Janitor', cleanings: 79 },
 ];
 
-const StaffSelector = () => {
+interface StaffSelectorProps {
+  onStaffSelect?: (staff: { id: number; name: string } | null) => void;
+  compact?: boolean;
+  className?: string;
+}
+
+const StaffSelector = ({ onStaffSelect, compact = false, className }: StaffSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<{ id: number; name: string } | null>(null);
 
@@ -43,12 +49,16 @@ const StaffSelector = () => {
     const savedStaffName = localStorage.getItem('selectedStaffName');
     
     if (savedStaffId && savedStaffName) {
-      setSelectedStaff({
+      const staff = {
         id: parseInt(savedStaffId),
         name: savedStaffName
-      });
+      };
+      setSelectedStaff(staff);
+      if (onStaffSelect) {
+        onStaffSelect(staff);
+      }
     }
-  }, []);
+  }, [onStaffSelect]);
 
   // Save the selected staff to localStorage when changed
   useEffect(() => {
@@ -60,12 +70,82 @@ const StaffSelector = () => {
 
   const handleSelectStaff = (staff: { id: number; name: string }) => {
     setSelectedStaff(staff);
+    if (onStaffSelect) {
+      onStaffSelect(staff);
+    }
     setOpen(false);
     toast.success(`Selected staff: ${staff.name}`);
   };
 
+  if (compact) {
+    return (
+      <div className={cn("w-full", className)}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+            >
+              {selectedStaff ? selectedStaff.name : "Select your name..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0">
+            <Command>
+              <CommandInput placeholder="Search staff..." />
+              <CommandList>
+                <CommandEmpty>No staff found.</CommandEmpty>
+                <CommandGroup>
+                  {staffMembers.map((staff) => (
+                    <CommandItem
+                      key={staff.id}
+                      value={staff.name}
+                      onSelect={() => handleSelectStaff({ id: staff.id, name: staff.name })}
+                      className="cursor-pointer"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      <span>{staff.name}</span>
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          selectedStaff?.id === staff.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {selectedStaff && (
+          <div className="flex justify-end mt-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                setSelectedStaff(null);
+                if (onStaffSelect) {
+                  onStaffSelect(null);
+                }
+                localStorage.removeItem('selectedStaffId');
+                localStorage.removeItem('selectedStaffName');
+                toast.info('Staff selection cleared');
+              }}
+              className="text-xs h-6 px-2"
+            >
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <Card className="w-full max-w-md">
+    <Card className={cn("w-full max-w-md", className)}>
       <CardHeader>
         <CardTitle>Staff Selection</CardTitle>
         <CardDescription>
@@ -124,6 +204,9 @@ const StaffSelector = () => {
             size="sm"
             onClick={() => {
               setSelectedStaff(null);
+              if (onStaffSelect) {
+                onStaffSelect(null);
+              }
               localStorage.removeItem('selectedStaffId');
               localStorage.removeItem('selectedStaffName');
               toast.info('Staff selection cleared');

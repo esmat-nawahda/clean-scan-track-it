@@ -1,14 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import StaffSelector from '@/components/admin/StaffSelector';
 
 interface ChecklistItem {
   id: string;
@@ -30,7 +30,7 @@ const CleaningChecklist = () => {
   const currentDate = format(new Date(), 'PPP');
   const currentTime = format(new Date(), 'p');
   
-  const [staffName, setStaffName] = useState('');
+  const [selectedStaff, setSelectedStaff] = useState<{ id: number; name: string } | null>(null);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -51,8 +51,8 @@ const CleaningChecklist = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!staffName) {
-      toast.error('Please enter your name');
+    if (!selectedStaff) {
+      toast.error('Please select your name');
       return;
     }
     
@@ -88,13 +88,11 @@ const CleaningChecklist = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="staffName">Your Name</Label>
-            <Input 
-              id="staffName" 
-              value={staffName} 
-              onChange={(e) => setStaffName(e.target.value)} 
-              placeholder="Enter your name" 
-              required 
+            <Label>Your Name</Label>
+            <StaffSelector 
+              compact 
+              onStaffSelect={setSelectedStaff} 
+              className="w-full"
             />
           </div>
           
@@ -132,7 +130,7 @@ const CleaningChecklist = () => {
           <Button 
             type="submit" 
             className="w-full" 
-            disabled={isSubmitting}
+            disabled={isSubmitting || !selectedStaff}
           >
             {isSubmitting ? 'Submitting...' : 'Submit Cleaning Record'}
           </Button>
