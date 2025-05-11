@@ -16,6 +16,7 @@ import LocationsPage from "./pages/admin/LocationsPage";
 import StaffPage from "./pages/admin/StaffPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
+import QRManagementPage from "./pages/admin/QRManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="locations" element={<LocationsPage />} />
+            <Route path="qr-management" element={<QRManagementPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Check, Database, File as FileIcon, Settings, Users } from 'lucide-react';
+import { Check, Database, File as FileIcon, Settings, Users, QrCode } from 'lucide-react';
 
 interface AuthState {
   isLoggedIn: boolean;
@@ -134,6 +134,13 @@ const AdminSidebar = ({ onLogout, clientName, collapsed, toggleSidebar }: AdminS
               <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
                 <Check className="h-4 w-4" />
                 {!collapsed && <span className="ml-2">Locations</span>}
+              </div>
+            </NavLink>
+
+            <NavLink to="/admin/qr-management" className={getNavClass}>
+              <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
+                <QrCode className="h-4 w-4" />
+                {!collapsed && <span className="ml-2">QR & Checklists</span>}
               </div>
             </NavLink>
             
