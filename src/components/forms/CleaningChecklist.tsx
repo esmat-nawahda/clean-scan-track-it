@@ -5,10 +5,11 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import StaffSelector from '@/components/admin/StaffSelector';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ChecklistItem {
   id: string;
@@ -96,18 +97,27 @@ const CleaningChecklist = () => {
             />
           </div>
           
-          <div className="space-y-3">
-            <Label>Cleaning Checklist</Label>
+          <div className="space-y-4">
+            <Label className="text-lg font-medium">Cleaning Checklist</Label>
             {checklist.map((item) => (
-              <div key={item.id} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={item.id} 
-                  checked={item.checked}
-                  onCheckedChange={() => toggleChecklistItem(item.id)}
-                />
+              <div 
+                key={item.id} 
+                className="flex items-start space-x-3"
+                onClick={() => toggleChecklistItem(item.id)}
+              >
+                <div 
+                  className={cn(
+                    "flex-shrink-0 w-7 h-7 mt-0.5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all duration-200",
+                    item.checked 
+                      ? "bg-primary border-primary text-primary-foreground" 
+                      : "border-gray-300 hover:border-primary/70"
+                  )}
+                >
+                  {item.checked && <Check className="h-5 w-5" strokeWidth={3} />}
+                </div>
                 <label
                   htmlFor={item.id}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-base leading-tight cursor-pointer select-none"
                 >
                   {item.label}
                 </label>
@@ -129,7 +139,7 @@ const CleaningChecklist = () => {
         <CardFooter>
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full text-lg py-6" 
             disabled={isSubmitting || !selectedStaff}
           >
             {isSubmitting ? 'Submitting...' : 'Submit Cleaning Record'}
