@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import StaffSelector from '@/components/admin/StaffSelector';
-import { Check, CheckCheck } from 'lucide-react';
+import { CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChecklistItem {

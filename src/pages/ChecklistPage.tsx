@@ -11,7 +11,7 @@ const ChecklistPage = () => {
       <MainLayout className="pt-8">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Cleaning Checklist</h1>
+            <h1 className="text-3xl font-bold mb-2">SpotlessQR</h1>
             <p className="text-muted-foreground">
               Please complete all items on the checklist
             </p>
