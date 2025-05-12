@@ -724,10 +724,12 @@ const QRRoomManager: React.FC = () => {
         <TabsContent value="templates">
           <ChecklistTemplateManager 
             templates={templates} 
-            onCreateTemplate={handleTemplateCreate}
-            onUpdateTemplate={handleTemplateUpdate}
-            onDeleteTemplate={handleTemplateDelete}
-            onDuplicateTemplate={handleTemplateDuplicate}
+            onTemplateCreate={handleTemplateCreate}
+            onTemplateUpdate={handleTemplateUpdate}
+            onTemplateDelete={handleTemplateDelete}
+            onTemplateDuplicate={handleTemplateDuplicate}
+            onSelectTemplate={setSelectedTemplateId}
+            selectedTemplateId={selectedTemplateId}
           />
         </TabsContent>
         
