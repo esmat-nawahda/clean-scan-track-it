@@ -11,7 +11,7 @@ const AdminPage = () => {
           <p className="text-muted-foreground mb-4">
             Multi-client cleaning management system
           </p>
-          <div className="flex justify-center gap-3 mb-6">
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
             <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
               Hotels
             </span>
