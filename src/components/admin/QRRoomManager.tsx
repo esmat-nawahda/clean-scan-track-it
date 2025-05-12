@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -183,7 +182,7 @@ const QRRoomManager: React.FC = () => {
       });
 
       // Set state with data from Supabase
-      setLocations(locationsData);
+      setLocations(locationsData as Location[]);
       setTemplates(templatesWithItems);
       setRooms(mappedRooms);
       setSchedules(mappedSchedules);
@@ -415,11 +414,11 @@ const QRRoomManager: React.FC = () => {
     
     try {
       // Create new location in Supabase
-      const locationData = await saveDataToSupabase('location', 'create', newLocation);
+      const locationData = await saveDataToSupabase('location', 'create', newLocation) as Location | null;
       
       if (locationData) {
         // Update local state
-        const newLocationObj = {
+        const newLocationObj: Location = {
           id: locationData.id,
           name: locationData.name,
           code: locationData.code,
@@ -703,7 +702,7 @@ const QRRoomManager: React.FC = () => {
         
         const savedSchedule = await saveDataToSupabase('schedule', 'create', newScheduleData);
         
-        if (savedSchedule) {
+        if (savedSchedule && typeof savedSchedule !== 'boolean') {
           const newSchedule: CleaningSchedule = {
             id: savedSchedule.id,
             roomId: savedSchedule.room_id,
