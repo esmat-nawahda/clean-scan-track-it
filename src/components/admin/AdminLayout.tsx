@@ -3,13 +3,15 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Check, Database, File as FileIcon, Settings, Users, QrCode } from 'lucide-react';
+import { Check, Database, File as FileIcon, Settings, Users, QrCode, Building } from 'lucide-react';
 
 interface AuthState {
   isLoggedIn: boolean;
   username: string;
   role: string;
   clientName: string;
+  clientId?: number;
+  clientType?: string;
 }
 
 const AdminLayout = () => {
@@ -46,6 +48,7 @@ const AdminLayout = () => {
       <AdminSidebar 
         onLogout={handleLogout} 
         clientName={auth?.clientName || 'Loading...'} 
+        clientType={auth?.clientType || ''}
         collapsed={sidebarCollapsed}
         toggleSidebar={toggleSidebar}
       />
@@ -64,9 +67,14 @@ const AdminLayout = () => {
             </svg>
           </button>
           <div className="flex items-center justify-between w-full">
-            <h2 className="text-lg font-medium ml-4">
-              {auth?.clientName || 'Admin Dashboard'}
-            </h2>
+            <div className="flex flex-col ml-4">
+              <h2 className="text-lg font-medium">
+                {auth?.clientName || 'Admin Dashboard'}
+              </h2>
+              {auth?.clientType && (
+                <span className="text-xs text-muted-foreground">{auth.clientType}</span>
+              )}
+            </div>
             <div className="flex items-center gap-4">
               {auth?.username && (
                 <span className="text-sm text-muted-foreground">
@@ -88,11 +96,12 @@ const AdminLayout = () => {
 interface AdminSidebarProps {
   onLogout: () => void;
   clientName: string;
+  clientType?: string;
   collapsed: boolean;
   toggleSidebar: () => void;
 }
 
-const AdminSidebar = ({ onLogout, clientName, collapsed, toggleSidebar }: AdminSidebarProps) => {
+const AdminSidebar = ({ onLogout, clientName, clientType, collapsed, toggleSidebar }: AdminSidebarProps) => {
   const location = useLocation();
   const currentPath = location.pathname;
   
@@ -106,13 +115,13 @@ const AdminSidebar = ({ onLogout, clientName, collapsed, toggleSidebar }: AdminS
       <div className={`h-14 flex items-center border-b px-2 ${collapsed ? "justify-center" : "px-4"}`}>
         {!collapsed && (
           <Link to="/admin/dashboard" className="font-semibold text-lg">
-            CleanTrack
+            SpotlessQR
           </Link>
         )}
         {collapsed && (
           <div className="rounded-md bg-primary p-1">
             <div className="h-6 w-6 text-primary-foreground flex items-center justify-center font-bold">
-              CT
+              SQ
             </div>
           </div>
         )}
@@ -120,7 +129,20 @@ const AdminSidebar = ({ onLogout, clientName, collapsed, toggleSidebar }: AdminS
       
       <div className={`py-2 ${collapsed ? "" : "px-4"}`}>
         <div className="space-y-1">
-          {!collapsed && <p className="text-xs text-muted-foreground mb-2 mt-2">Management</p>}
+          {!collapsed && (
+            <>
+              <p className="text-xs text-muted-foreground mb-2 mt-2">Management</p>
+              <div className="bg-muted/50 rounded-md p-2 mb-3">
+                <div className="flex items-center">
+                  <Building className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <div className="truncate">
+                    <p className="text-xs font-medium">{clientName}</p>
+                    {clientType && <p className="text-xs text-muted-foreground">{clientType}</p>}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
           
           <div>
             <NavLink to="/admin/dashboard" className={getNavClass}>
@@ -170,7 +192,6 @@ const AdminSidebar = ({ onLogout, clientName, collapsed, toggleSidebar }: AdminS
         <div className={`mt-auto pt-4 ${collapsed ? "px-2" : ""}`}>
           {!collapsed ? (
             <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">{clientName}</p>
               <Button onClick={onLogout} variant="outline" className="w-full justify-start">
                 Logout
               </Button>

@@ -6,11 +6,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Mock client organizations data
+const clientOrganizations = [
+  { id: 1, name: 'Luxury Grand Hotel', type: 'Hotel' },
+  { id: 2, name: 'Westfield Shopping Center', type: 'Mall' },
+  { id: 3, name: 'City General Hospital', type: 'Hospital' },
+  { id: 4, name: 'Demo Company', type: 'Demo' },
+];
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -18,6 +28,11 @@ const AdminLogin = () => {
     
     if (!username || !password) {
       toast.error('Please enter both username and password');
+      return;
+    }
+
+    if (!selectedClientId) {
+      toast.error('Please select a client organization');
       return;
     }
     
@@ -28,17 +43,22 @@ const AdminLogin = () => {
       // For demo purposes, we'll simulate a login
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Find the selected client
+      const selectedClient = clientOrganizations.find(client => client.id.toString() === selectedClientId);
+      
       // Demo credentials for testing
-      if (username === 'admin' && password === 'password') {
+      if (username === 'admin' && password === 'password' && selectedClient) {
         // Store some basic demo auth
         localStorage.setItem('cleantrack-auth', JSON.stringify({
           isLoggedIn: true,
           username: username,
           role: 'admin',
-          clientName: 'Demo Company'
+          clientName: selectedClient.name,
+          clientId: selectedClient.id,
+          clientType: selectedClient.type
         }));
         
-        toast.success('Login successful!');
+        toast.success(`Logged in to ${selectedClient.name}!`);
         navigate('/admin/dashboard');
       } else {
         toast.error('Invalid credentials');
@@ -61,6 +81,25 @@ const AdminLogin = () => {
       </CardHeader>
       <form onSubmit={handleLogin}>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="clientOrg">Organization</Label>
+            <Select 
+              value={selectedClientId} 
+              onValueChange={setSelectedClientId}
+            >
+              <SelectTrigger id="clientOrg" disabled={isLoading}>
+                <SelectValue placeholder="Select a client organization" />
+              </SelectTrigger>
+              <SelectContent>
+                {clientOrganizations.map(client => (
+                  <SelectItem key={client.id} value={client.id.toString()}>
+                    {client.name} ({client.type})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
             <Input
@@ -95,7 +134,7 @@ const AdminLogin = () => {
           <Button 
             type="submit" 
             className="w-full"
-            disabled={isLoading}
+            disabled={isLoading || !selectedClientId}
           >
             {isLoading ? 'Logging in...' : 'Login'}
           </Button>
