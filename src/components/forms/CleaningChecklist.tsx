@@ -30,22 +30,26 @@ const locationNameMap: Record<string, Record<Language, string>> = {
   'bathroom-floor1': {
     en: 'First Floor Bathroom',
     es: 'Baño del Primer Piso',
-    fr: 'Toilettes du Premier Étage'
+    fr: 'Toilettes du Premier Étage',
+    ar: 'حمام الطابق الأول'
   },
   'kitchen-main': {
     en: 'Main Kitchen',
     es: 'Cocina Principal',
-    fr: 'Cuisine Principale'
+    fr: 'Cuisine Principale',
+    ar: 'المطبخ الرئيسي'
   },
   'lobby-entrance': {
     en: 'Main Lobby',
     es: 'Vestíbulo Principal',
-    fr: 'Hall Principal'
+    fr: 'Hall Principal',
+    ar: 'الردهة الرئيسية'
   },
   'office-exec': {
     en: 'Executive Office Suite',
     es: 'Suite de Oficinas Ejecutivas',
-    fr: 'Suite de Bureau Exécutif'
+    fr: 'Suite de Bureau Exécutif',
+    ar: 'جناح المكتب التنفيذي'
   },
 };
 
@@ -142,6 +146,7 @@ const CleaningChecklist = () => {
                 <SelectItem value="en">{t('english')}</SelectItem>
                 <SelectItem value="es">{t('spanish')}</SelectItem>
                 <SelectItem value="fr">{t('french')}</SelectItem>
+                <SelectItem value="ar">{t('arabic')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Define supported languages
-export type Language = 'en' | 'es' | 'fr';
+export type Language = 'en' | 'es' | 'fr' | 'ar';
 
 // Define translations interface
 export interface Translations {
@@ -48,6 +48,7 @@ export const translations: Translations = {
     "english": "English",
     "spanish": "Spanish",
     "french": "French",
+    "arabic": "Arabic",
   },
   es: {
     // Page title
@@ -84,6 +85,7 @@ export const translations: Translations = {
     "english": "Inglés",
     "spanish": "Español",
     "french": "Francés",
+    "arabic": "Árabe",
   },
   fr: {
     // Page title
@@ -120,6 +122,44 @@ export const translations: Translations = {
     "english": "Anglais",
     "spanish": "Espagnol",
     "french": "Français",
+    "arabic": "Arabe",
+  },
+  ar: {
+    // Page title
+    "title": "SpotlessQR",
+    "subtitle": "يرجى إكمال جميع العناصر في قائمة التحقق",
+    
+    // Form elements
+    "yourName": "اسمك",
+    "cleaningChecklist": "قائمة التنظيف",
+    "additionalNotes": "ملاحظات إضافية",
+    "notesPlaceholder": "أدخل أي ملاحظات أو مشاكل إضافية (اختياري)",
+    "submit": "إرسال سجل التنظيف",
+    "submitting": "جاري الإرسال...",
+    
+    // Admin contact
+    "needAssistance": "هل تحتاج إلى مساعدة؟ اتصل بالمسؤول",
+    "facilityManager": "مدير المنشأة",
+    
+    // Checklist items
+    "floors": "تم تنظيف ومسح الأرضيات",
+    "surfaces": "تم مسح وتطهير جميع الأسطح",
+    "trash": "تم إفراغ واستبدال القمامة",
+    "supplies": "تم إعادة تخزين المستلزمات",
+    "fixtures": "تم تنظيف وتلميع التركيبات",
+    
+    // Toasts
+    "selectName": "الرجاء اختيار اسمك",
+    "completeChecklist": "يرجى إكمال جميع عناصر قائمة التحقق",
+    "submitSuccess": "تم إرسال سجل التنظيف بنجاح!",
+    "submitError": "فشل في إرسال سجل التنظيف",
+    
+    // Language
+    "language": "اللغة",
+    "english": "الإنجليزية",
+    "spanish": "الإسبانية",
+    "french": "الفرنسية",
+    "arabic": "العربية",
   }
 };
 
@@ -140,7 +180,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Initialize language from localStorage if available
   useEffect(() => {
     const savedLanguage = localStorage.getItem('preferredLanguage');
-    if (savedLanguage && ['en', 'es', 'fr'].includes(savedLanguage)) {
+    if (savedLanguage && ['en', 'es', 'fr', 'ar'].includes(savedLanguage)) {
       setLanguage(savedLanguage as Language);
     }
   }, []);
