@@ -1,109 +1,327 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, QrCode, Printer, CalendarClock, MapPin, Check } from 'lucide-react';
+import { Plus, QrCode, Printer, CalendarClock, MapPin, Check, Loader2 } from 'lucide-react';
 import QRCodeGenerator from './QRCodeGenerator';
 import ChecklistTemplateManager, { ChecklistTemplate } from './ChecklistTemplateManager';
 import RoomAlerts, { Room } from './RoomAlerts';
+import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from 'uuid';
 
-// Mock initial data
-const initialTemplates: ChecklistTemplate[] = [
-  {
-    id: 'template-1',
-    name: 'Bathroom Cleaning',
-    items: [
-      { id: 'item-1-1', text: 'Clean toilet', required: true },
-      { id: 'item-1-2', text: 'Wipe mirrors', required: true },
-      { id: 'item-1-3', text: 'Mop floors', required: true },
-      { id: 'item-1-4', text: 'Refill soap dispensers', required: false },
-      { id: 'item-1-5', text: 'Restock toilet paper', required: false },
-    ]
-  },
-  {
-    id: 'template-2',
-    name: 'Office Cleaning',
-    items: [
-      { id: 'item-2-1', text: 'Empty trash', required: true },
-      { id: 'item-2-2', text: 'Vacuum carpet', required: true },
-      { id: 'item-2-3', text: 'Dust surfaces', required: false },
-      { id: 'item-2-4', text: 'Clean windows', required: false },
-    ]
-  }
-];
-
-// Mock location data
-const initialLocations = [
-  { id: 'bathroom-floor1', name: 'First Floor Bathroom', qrCode: 'bathroom-floor1' },
-  { id: 'kitchen-main', name: 'Main Kitchen', qrCode: 'kitchen-main' },
-  { id: 'lobby-entrance', name: 'Main Lobby', qrCode: 'lobby-entrance' },
-  { id: 'office-exec', name: 'Executive Office Suite', qrCode: 'office-exec' },
-];
+// Types from Supabase database
+interface Location {
+  id: string;
+  name: string;
+  code: string;
+}
 
 interface CleaningSchedule {
   id: string;
   roomId: string;
   frequency: 'hourly' | 'daily' | 'weekly' | 'custom';
-  interval?: number; // In hours for custom frequency
-  lastCleaned?: string;
-  nextCleaningDue?: string;
+  interval_hours?: number; // In hours for custom frequency
+  last_cleaned?: string;
+  next_cleaning_due?: string;
 }
 
 const QRRoomManager: React.FC = () => {
   // State variables
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [locations, setLocations] = useState(initialLocations);
-  const [templates, setTemplates] = useState<ChecklistTemplate[]>(initialTemplates);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [isCreateLocationOpen, setIsCreateLocationOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [newRoom, setNewRoom] = useState<Partial<Room>>({
     name: '',
     location: '',
     templateId: '',
     status: 'clean'
   });
-  const [newLocation, setNewLocation] = useState({ name: '', id: '' });
+  const [newLocation, setNewLocation] = useState({ name: '', id: '', code: '' });
   const [activeTabId, setActiveTabId] = useState<string>('rooms');
   const [schedules, setSchedules] = useState<CleaningSchedule[]>([]);
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<Partial<CleaningSchedule>>({
     frequency: 'hourly',
-    interval: 1
+    interval_hours: 1
   });
   const [selectedRoomForSchedule, setSelectedRoomForSchedule] = useState<Room | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
   
-  // Load data from localStorage on component mount
+  // Load authenticated user and organization data
   useEffect(() => {
-    const storedRooms = localStorage.getItem('cleantrack-rooms');
-    const storedTemplates = localStorage.getItem('cleantrack-templates');
-    const storedLocations = localStorage.getItem('cleantrack-locations');
-    const storedSchedules = localStorage.getItem('cleantrack-schedules');
-    
-    if (storedRooms) {
-      setRooms(JSON.parse(storedRooms));
-    }
-    
-    if (storedTemplates) {
-      setTemplates(JSON.parse(storedTemplates));
-    }
+    const loadAuthData = async () => {
+      try {
+        // Get stored auth data
+        const authDataStr = localStorage.getItem('cleantrack-auth');
+        if (authDataStr) {
+          const authData = JSON.parse(authDataStr);
+          // For now, hardcoded for demo
+          if (authData.clientName === 'Demo Company') {
+            setOrgId('00000000-0000-0000-0000-000000000005');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading auth data:', error);
+      }
+    };
 
-    if (storedLocations) {
-      setLocations(JSON.parse(storedLocations));
-    }
-
-    if (storedSchedules) {
-      setSchedules(JSON.parse(storedSchedules));
-    }
+    loadAuthData();
   }, []);
+
+  // Load data from Supabase when orgId is available
+  useEffect(() => {
+    if (orgId) {
+      loadDataFromSupabase();
+    }
+  }, [orgId]);
+
+  const loadDataFromSupabase = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch locations
+      const { data: locationsData, error: locationsError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('organization_id', orgId);
+      
+      if (locationsError) throw locationsError;
+      
+      // Fetch templates
+      const { data: templatesData, error: templatesError } = await supabase
+        .from('checklist_templates')
+        .select('*')
+        .eq('organization_id', orgId);
+      
+      if (templatesError) throw templatesError;
+
+      // Fetch template items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('checklist_items')
+        .select('*')
+        .in('template_id', templatesData.map(t => t.id));
+      
+      if (itemsError) throw itemsError;
+
+      // Combine templates with their items
+      const templatesWithItems = templatesData.map(template => {
+        const items = itemsData
+          .filter(item => item.template_id === template.id)
+          .map(item => ({
+            id: item.id,
+            text: item.text,
+            required: item.required,
+          }));
+        
+        return {
+          id: template.id,
+          name: template.name,
+          items,
+        };
+      });
+
+      // Fetch rooms
+      const { data: roomsData, error: roomsError } = await supabase
+        .from('rooms')
+        .select('*')
+        .in('location_id', locationsData.map(l => l.id));
+      
+      if (roomsError) throw roomsError;
+
+      // Fetch cleaning schedules
+      const { data: schedulesData, error: schedulesError } = await supabase
+        .from('cleaning_schedules')
+        .select('*')
+        .in('room_id', roomsData.map(r => r.id));
+      
+      if (schedulesError) throw schedulesError;
+
+      // Map schedules to our internal format
+      const mappedSchedules = schedulesData.map(schedule => ({
+        id: schedule.id,
+        roomId: schedule.room_id,
+        frequency: schedule.frequency as 'hourly' | 'daily' | 'weekly' | 'custom',
+        interval_hours: schedule.interval_hours,
+        last_cleaned: schedule.last_cleaned,
+        next_cleaning_due: schedule.next_cleaning_due,
+      }));
+
+      // Map rooms to our internal format
+      const mappedRooms = roomsData.map(room => {
+        const roomSchedule = mappedSchedules.find(s => s.roomId === room.id);
+        let status: 'clean' | 'needs-cleaning' | 'overdue' = 'clean';
+        
+        if (roomSchedule && roomSchedule.next_cleaning_due) {
+          const now = new Date();
+          const nextDue = new Date(roomSchedule.next_cleaning_due);
+          
+          if (now > nextDue) {
+            // Overdue if more than 30 minutes late
+            const overdueThreshold = new Date(nextDue);
+            overdueThreshold.setMinutes(overdueThreshold.getMinutes() + 30);
+            status = now > overdueThreshold ? 'overdue' : 'needs-cleaning';
+          }
+        }
+        
+        return {
+          id: room.id,
+          name: room.name,
+          location: room.location_id,
+          templateId: room.template_id,
+          status,
+          qrCodeUrl: `${window.location.origin}/check/${room.qr_code}`, // Format for QR URL
+        };
+      });
+
+      // Set state with data from Supabase
+      setLocations(locationsData);
+      setTemplates(templatesWithItems);
+      setRooms(mappedRooms);
+      setSchedules(mappedSchedules);
+    } catch (error) {
+      console.error('Error loading data from Supabase:', error);
+      toast.error('Failed to load data from database');
+      
+      // Fall back to localStorage for demo if needed
+      const storedRooms = localStorage.getItem('cleantrack-rooms');
+      const storedTemplates = localStorage.getItem('cleantrack-templates');
+      const storedLocations = localStorage.getItem('cleantrack-locations');
+      const storedSchedules = localStorage.getItem('cleantrack-schedules');
+      
+      if (storedRooms) setRooms(JSON.parse(storedRooms));
+      if (storedTemplates) setTemplates(JSON.parse(storedTemplates));
+      if (storedLocations) setLocations(JSON.parse(storedLocations));
+      if (storedSchedules) setSchedules(JSON.parse(storedSchedules));
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
-  // Save to localStorage when data changes
+  // This will save new data both to Supabase and localStorage as backup
+  const saveDataToSupabase = async (
+    dataType: 'room' | 'location' | 'template' | 'schedule', 
+    action: 'create' | 'update' | 'delete',
+    data: any
+  ) => {
+    try {
+      switch (dataType) {
+        case 'room':
+          if (action === 'create') {
+            const { data: roomData, error: roomError } = await supabase
+              .from('rooms')
+              .insert({
+                name: data.name,
+                location_id: data.location,
+                template_id: data.templateId,
+                qr_code: data.qrCode,
+                status: data.status || 'clean',
+              })
+              .select()
+              .single();
+            
+            if (roomError) throw roomError;
+            return roomData;
+          } else if (action === 'update') {
+            const { error: roomUpdateError } = await supabase
+              .from('rooms')
+              .update({
+                status: data.status,
+              })
+              .eq('id', data.id);
+            
+            if (roomUpdateError) throw roomUpdateError;
+          }
+          break;
+          
+        case 'schedule':
+          if (action === 'create') {
+            const { data: scheduleData, error: scheduleError } = await supabase
+              .from('cleaning_schedules')
+              .insert({
+                room_id: data.roomId,
+                frequency: data.frequency,
+                interval_hours: data.interval_hours,
+                last_cleaned: data.last_cleaned,
+                next_cleaning_due: data.next_cleaning_due,
+              })
+              .select()
+              .single();
+            
+            if (scheduleError) throw scheduleError;
+            return scheduleData;
+          } else if (action === 'update') {
+            const { error: scheduleUpdateError } = await supabase
+              .from('cleaning_schedules')
+              .update({
+                frequency: data.frequency,
+                interval_hours: data.interval_hours,
+                last_cleaned: data.last_cleaned,
+                next_cleaning_due: data.next_cleaning_due,
+              })
+              .eq('id', data.id);
+            
+            if (scheduleUpdateError) throw scheduleUpdateError;
+          }
+          break;
+          
+        case 'location':
+          if (action === 'create') {
+            const { data: locationData, error: locationError } = await supabase
+              .from('locations')
+              .insert({
+                name: data.name,
+                code: data.code,
+                organization_id: orgId,
+              })
+              .select()
+              .single();
+            
+            if (locationError) throw locationError;
+            return locationData;
+          }
+          break;
+          
+        case 'template':
+          // Template operations would be implemented here
+          break;
+      }
+      
+      // Success
+      return true;
+    } catch (error) {
+      console.error(`Error saving ${dataType} to Supabase:`, error);
+      toast.error(`Failed to save ${dataType} to database`);
+      
+      // Still save to localStorage as backup
+      switch (dataType) {
+        case 'room':
+          localStorage.setItem('cleantrack-rooms', JSON.stringify(rooms));
+          break;
+        case 'location':
+          localStorage.setItem('cleantrack-locations', JSON.stringify(locations));
+          break;
+        case 'template':
+          localStorage.setItem('cleantrack-templates', JSON.stringify(templates));
+          break;
+        case 'schedule':
+          localStorage.setItem('cleantrack-schedules', JSON.stringify(schedules));
+          break;
+      }
+      
+      return null;
+    }
+  };
+  
+  // Save to localStorage when data changes (as backup)
   useEffect(() => {
     localStorage.setItem('cleantrack-rooms', JSON.stringify(rooms));
   }, [rooms]);
@@ -127,11 +345,11 @@ const QRRoomManager: React.FC = () => {
       const updatedRooms = rooms.map(room => {
         const roomSchedule = schedules.find(s => s.roomId === room.id);
         
-        if (!roomSchedule || !roomSchedule.nextCleaningDue) {
+        if (!roomSchedule || !roomSchedule.next_cleaning_due) {
           return room;
         }
         
-        const nextDue = new Date(roomSchedule.nextCleaningDue);
+        const nextDue = new Date(roomSchedule.next_cleaning_due);
         let status: 'clean' | 'needs-cleaning' | 'overdue' = 'clean';
         
         if (now > nextDue) {
@@ -144,8 +362,8 @@ const QRRoomManager: React.FC = () => {
         return {
           ...room,
           status,
-          lastCleaned: roomSchedule.lastCleaned,
-          nextCleaningDue: roomSchedule.nextCleaningDue
+          lastCleaned: roomSchedule.last_cleaned,
+          nextCleaningDue: roomSchedule.next_cleaning_due
         };
       });
       
@@ -162,46 +380,60 @@ const QRRoomManager: React.FC = () => {
   // Location management
   const handleNewLocationChange = (field: string, value: string) => {
     let id = newLocation.id;
+    let code = newLocation.code;
     
     if (field === 'name' && newLocation.id === '') {
-      // Auto-generate an ID from the name
-      id = value.toLowerCase().replace(/\s+/g, '-');
+      // Auto-generate an ID and code from the name
+      id = uuidv4();
+      code = value.toLowerCase().replace(/\s+/g, '-');
     }
     
     setNewLocation({ 
       ...newLocation, 
       [field]: value,
-      id: field === 'id' ? value : id
+      id: field === 'id' ? value : id,
+      code: field === 'code' ? value : code
     });
   };
   
-  const addLocation = () => {
+  const addLocation = async () => {
     if (!newLocation.name) {
       toast.error('Location name is required');
       return;
     }
     
-    if (!newLocation.id) {
-      toast.error('Location ID is required');
+    if (!newLocation.code) {
+      toast.error('Location code is required');
       return;
     }
     
-    // Check for duplicate IDs
-    if (locations.some(location => location.id === newLocation.id)) {
-      toast.error('Location ID already exists');
+    // Check for duplicate codes
+    if (locations.some(location => location.code === newLocation.code)) {
+      toast.error('Location code already exists');
       return;
     }
     
-    const newLocationObj = {
-      id: newLocation.id,
-      name: newLocation.name,
-      qrCode: newLocation.id,
-    };
-    
-    setLocations([...locations, newLocationObj]);
-    setNewLocation({ name: '', id: '' });
-    setIsCreateLocationOpen(false);
-    toast.success('Location added successfully');
+    try {
+      // Create new location in Supabase
+      const locationData = await saveDataToSupabase('location', 'create', newLocation);
+      
+      if (locationData) {
+        // Update local state
+        const newLocationObj = {
+          id: locationData.id,
+          name: locationData.name,
+          code: locationData.code,
+        };
+        
+        setLocations([...locations, newLocationObj]);
+        setNewLocation({ name: '', id: '', code: '' });
+        setIsCreateLocationOpen(false);
+        toast.success('Location added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding location:', error);
+      toast.error('Failed to add location');
+    }
   };
   
   // Functions for template management
@@ -232,7 +464,7 @@ const QRRoomManager: React.FC = () => {
     if (templateToDuplicate) {
       const duplicatedTemplate: ChecklistTemplate = {
         ...templateToDuplicate,
-        id: `template-${Date.now()}`,
+        id: uuidv4(),
         name: `${templateToDuplicate.name} (Copy)`,
       };
       
@@ -242,40 +474,79 @@ const QRRoomManager: React.FC = () => {
   };
   
   // Functions for room management
-  const handleCreateRoom = () => {
+  const handleCreateRoom = async () => {
     if (!newRoom.name || !newRoom.templateId) {
       toast.error('Please fill in all required fields');
       return;
     }
     
-    const roomId = `room-${Date.now()}`;
-    const qrValue = `${window.location.origin}/check/${roomId}`;
-    
-    const createdRoom: Room = {
-      id: roomId,
-      name: newRoom.name || '',
-      location: newRoom.location || '',
-      templateId: newRoom.templateId || '',
-      status: 'clean',
-      qrCodeUrl: qrValue,
-    };
-    
-    setRooms([...rooms, createdRoom]);
+    try {
+      const roomId = uuidv4();
+      const qrCode = `room-${Date.now()}`;
+      const qrValue = `${window.location.origin}/check/${qrCode}`;
+      
+      const roomData = {
+        id: roomId,
+        name: newRoom.name || '',
+        location: newRoom.location || '',
+        templateId: newRoom.templateId || '',
+        status: 'clean',
+        qrCode: qrCode,
+        qrCodeUrl: qrValue,
+      };
+      
+      // Save room to database
+      const savedRoom = await saveDataToSupabase('room', 'create', roomData);
+      
+      if (savedRoom) {
+        // Format the room object for our state
+        const createdRoom: Room = {
+          id: savedRoom.id,
+          name: savedRoom.name,
+          location: savedRoom.location_id,
+          templateId: savedRoom.template_id,
+          status: 'clean',
+          qrCodeUrl: qrValue,
+        };
+        
+        setRooms([...rooms, createdRoom]);
 
-    // Create default hourly schedule
-    const newSchedule: CleaningSchedule = {
-      id: `schedule-${Date.now()}`,
-      roomId: roomId,
-      frequency: 'hourly',
-      interval: 1,
-      lastCleaned: new Date().toISOString(),
-      nextCleaningDue: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-    };
-    
-    setSchedules([...schedules, newSchedule]);
-    setNewRoom({ name: '', location: '', templateId: '' });
-    setIsCreateRoomOpen(false);
-    toast.success('Room created successfully');
+        // Create default hourly schedule
+        const now = new Date();
+        const nextDue = new Date(now);
+        nextDue.setHours(nextDue.getHours() + 1);
+        
+        const scheduleData = {
+          roomId: createdRoom.id,
+          frequency: 'hourly',
+          interval_hours: 1,
+          last_cleaned: now.toISOString(),
+          next_cleaning_due: nextDue.toISOString(),
+        };
+        
+        const savedSchedule = await saveDataToSupabase('schedule', 'create', scheduleData);
+        
+        if (savedSchedule) {
+          const newSchedule: CleaningSchedule = {
+            id: savedSchedule.id,
+            roomId: savedSchedule.room_id,
+            frequency: savedSchedule.frequency,
+            interval_hours: savedSchedule.interval_hours,
+            last_cleaned: savedSchedule.last_cleaned,
+            next_cleaning_due: savedSchedule.next_cleaning_due,
+          };
+          
+          setSchedules([...schedules, newSchedule]);
+        }
+        
+        setNewRoom({ name: '', location: '', templateId: '' });
+        setIsCreateRoomOpen(false);
+        toast.success('Room created successfully');
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast.error('Failed to create room');
+    }
   };
   
   const handleSelectRoom = (room: Room) => {
@@ -288,48 +559,71 @@ const QRRoomManager: React.FC = () => {
     return template ? template.name : 'Unknown Template';
   };
 
-  const handleMarkAsCleaned = (roomId: string) => {
-    // Update room status
-    const updatedRooms = rooms.map(room => {
-      if (room.id === roomId) {
-        return { ...room, status: 'clean' as const };
+  const handleMarkAsCleaned = async (roomId: string) => {
+    try {
+      // Update room status
+      const roomToUpdate = rooms.find(r => r.id === roomId);
+      if (!roomToUpdate) return;
+      
+      const updatedRoom = { ...roomToUpdate, status: 'clean' as const };
+      await saveDataToSupabase('room', 'update', updatedRoom);
+      
+      // Update schedule with new cleaning time and next due time
+      const scheduleToUpdate = schedules.find(s => s.roomId === roomId);
+      if (!scheduleToUpdate) return;
+      
+      const now = new Date();
+      let nextDue = new Date(now);
+      
+      switch(scheduleToUpdate.frequency) {
+        case 'hourly':
+          nextDue.setHours(nextDue.getHours() + 1);
+          break;
+        case 'daily':
+          nextDue.setDate(nextDue.getDate() + 1);
+          break;
+        case 'weekly':
+          nextDue.setDate(nextDue.getDate() + 7);
+          break;
+        case 'custom':
+          nextDue.setHours(nextDue.getHours() + (scheduleToUpdate.interval_hours || 1));
+          break;
       }
-      return room;
-    });
-    
-    // Update schedule with new cleaning time and next due time
-    const updatedSchedules = schedules.map(schedule => {
-      if (schedule.roomId === roomId) {
-        const now = new Date();
-        let nextDue = new Date(now);
-        
-        switch(schedule.frequency) {
-          case 'hourly':
-            nextDue.setHours(nextDue.getHours() + 1);
-            break;
-          case 'daily':
-            nextDue.setDate(nextDue.getDate() + 1);
-            break;
-          case 'weekly':
-            nextDue.setDate(nextDue.getDate() + 7);
-            break;
-          case 'custom':
-            nextDue.setHours(nextDue.getHours() + (schedule.interval || 1));
-            break;
+      
+      const updatedSchedule = {
+        ...scheduleToUpdate,
+        last_cleaned: now.toISOString(),
+        next_cleaning_due: nextDue.toISOString()
+      };
+      
+      await saveDataToSupabase('schedule', 'update', updatedSchedule);
+      
+      // Update local state
+      const updatedRooms = rooms.map(room => {
+        if (room.id === roomId) {
+          return { ...room, status: 'clean' as const };
         }
-        
-        return {
-          ...schedule,
-          lastCleaned: now.toISOString(),
-          nextCleaningDue: nextDue.toISOString()
-        };
-      }
-      return schedule;
-    });
-    
-    setRooms(updatedRooms);
-    setSchedules(updatedSchedules);
-    toast.success('Room marked as cleaned');
+        return room;
+      });
+      
+      const updatedSchedules = schedules.map(schedule => {
+        if (schedule.roomId === roomId) {
+          return {
+            ...schedule,
+            last_cleaned: now.toISOString(),
+            next_cleaning_due: nextDue.toISOString()
+          };
+        }
+        return schedule;
+      });
+      
+      setRooms(updatedRooms);
+      setSchedules(updatedSchedules);
+      toast.success('Room marked as cleaned');
+    } catch (error) {
+      console.error('Error marking room as cleaned:', error);
+      toast.error('Failed to update room status');
+    }
   };
 
   const openScheduleDialog = (room: Room) => {
@@ -343,66 +637,92 @@ const QRRoomManager: React.FC = () => {
     } else {
       setCurrentSchedule({
         frequency: 'hourly',
-        interval: 1
+        interval_hours: 1
       });
     }
     
     setIsScheduleDialogOpen(true);
   };
 
-  const saveSchedule = () => {
+  const saveSchedule = async () => {
     if (!selectedRoomForSchedule) return;
     
-    const now = new Date();
-    let nextDue = new Date(now);
-    
-    // Calculate next due date based on frequency
-    switch(currentSchedule.frequency) {
-      case 'hourly':
-        nextDue.setHours(nextDue.getHours() + 1);
-        break;
-      case 'daily':
-        nextDue.setDate(nextDue.getDate() + 1);
-        break;
-      case 'weekly':
-        nextDue.setDate(nextDue.getDate() + 7);
-        break;
-      case 'custom':
-        nextDue.setHours(nextDue.getHours() + (currentSchedule.interval || 1));
-        break;
-    }
-    
-    const existingScheduleIndex = schedules.findIndex(
-      s => s.roomId === selectedRoomForSchedule.id
-    );
-    
-    if (existingScheduleIndex >= 0) {
-      // Update existing schedule
-      const updatedSchedules = [...schedules];
-      updatedSchedules[existingScheduleIndex] = {
-        ...updatedSchedules[existingScheduleIndex],
-        ...currentSchedule,
-        lastCleaned: now.toISOString(),
-        nextCleaningDue: nextDue.toISOString()
-      } as CleaningSchedule;
+    try {
+      const now = new Date();
+      let nextDue = new Date(now);
       
-      setSchedules(updatedSchedules);
-    } else {
-      // Create new schedule
-      const newSchedule: CleaningSchedule = {
-        id: `schedule-${Date.now()}`,
-        roomId: selectedRoomForSchedule.id,
-        frequency: currentSchedule.frequency as 'hourly' | 'daily' | 'weekly' | 'custom',
-        interval: currentSchedule.interval,
-        lastCleaned: now.toISOString(),
-        nextCleaningDue: nextDue.toISOString()
-      };
+      // Calculate next due date based on frequency
+      switch(currentSchedule.frequency) {
+        case 'hourly':
+          nextDue.setHours(nextDue.getHours() + 1);
+          break;
+        case 'daily':
+          nextDue.setDate(nextDue.getDate() + 1);
+          break;
+        case 'weekly':
+          nextDue.setDate(nextDue.getDate() + 7);
+          break;
+        case 'custom':
+          nextDue.setHours(nextDue.getHours() + (currentSchedule.interval_hours || 1));
+          break;
+      }
       
-      setSchedules([...schedules, newSchedule]);
+      const existingScheduleIndex = schedules.findIndex(
+        s => s.roomId === selectedRoomForSchedule.id
+      );
+      
+      if (existingScheduleIndex >= 0) {
+        // Update existing schedule
+        const scheduleToUpdate = {
+          ...schedules[existingScheduleIndex],
+          ...currentSchedule,
+          last_cleaned: now.toISOString(),
+          next_cleaning_due: nextDue.toISOString()
+        };
+        
+        await saveDataToSupabase('schedule', 'update', scheduleToUpdate);
+        
+        const updatedSchedules = [...schedules];
+        updatedSchedules[existingScheduleIndex] = {
+          ...updatedSchedules[existingScheduleIndex],
+          ...currentSchedule,
+          last_cleaned: now.toISOString(),
+          next_cleaning_due: nextDue.toISOString()
+        } as CleaningSchedule;
+        
+        setSchedules(updatedSchedules);
+      } else {
+        // Create new schedule
+        const newScheduleData = {
+          roomId: selectedRoomForSchedule.id,
+          frequency: currentSchedule.frequency as 'hourly' | 'daily' | 'weekly' | 'custom',
+          interval_hours: currentSchedule.interval_hours,
+          last_cleaned: now.toISOString(),
+          next_cleaning_due: nextDue.toISOString()
+        };
+        
+        const savedSchedule = await saveDataToSupabase('schedule', 'create', newScheduleData);
+        
+        if (savedSchedule) {
+          const newSchedule: CleaningSchedule = {
+            id: savedSchedule.id,
+            roomId: savedSchedule.room_id,
+            frequency: savedSchedule.frequency,
+            interval_hours: savedSchedule.interval_hours,
+            last_cleaned: savedSchedule.last_cleaned,
+            next_cleaning_due: savedSchedule.next_cleaning_due,
+          };
+          
+          setSchedules([...schedules, newSchedule]);
+        }
+      }
+      
+      setIsScheduleDialogOpen(false);
+      toast.success('Cleaning schedule updated');
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      toast.error('Failed to update schedule');
     }
-    
-    setIsScheduleDialogOpen(false);
-    toast.success('Cleaning schedule updated');
   };
 
   const getRoomScheduleText = (roomId: string) => {
@@ -417,7 +737,7 @@ const QRRoomManager: React.FC = () => {
       case 'weekly':
         return 'Once a week';
       case 'custom':
-        return `Every ${schedule.interval} hour${schedule.interval !== 1 ? 's' : ''}`;
+        return `Every ${schedule.interval_hours} hour${schedule.interval_hours !== 1 ? 's' : ''}`;
     }
   };
 
@@ -425,6 +745,23 @@ const QRRoomManager: React.FC = () => {
   const roomsNeedingAttention = rooms.filter(room => 
     room.status === 'needs-cleaning' || room.status === 'overdue'
   );
+  
+  // Get location name by id
+  const getLocationNameById = (locationId: string) => {
+    const location = locations.find(l => l.id === locationId);
+    return location ? location.name : 'Unknown Location';
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading room data...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -539,7 +876,7 @@ const QRRoomManager: React.FC = () => {
                     <CardDescription>
                       <div className="flex items-center">
                         <MapPin className="h-3 w-3 mr-1" />
-                        {locations.find(l => l.id === room.location)?.name || room.location}
+                        {getLocationNameById(room.location)}
                       </div>
                     </CardDescription>
                   </CardHeader>
@@ -649,15 +986,15 @@ const QRRoomManager: React.FC = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="locationId">Location ID</Label>
+                      <Label htmlFor="locationCode">Location Code</Label>
                       <Input 
-                        id="locationId" 
+                        id="locationCode" 
                         placeholder="e.g., bathroom-floor2"
-                        value={newLocation.id}
-                        onChange={(e) => handleNewLocationChange('id', e.target.value)}
+                        value={newLocation.code}
+                        onChange={(e) => handleNewLocationChange('code', e.target.value)}
                       />
                       <p className="text-sm text-muted-foreground">
-                        This ID will be used for internal reference
+                        This code will be used for internal reference
                       </p>
                     </div>
                   </div>
@@ -724,7 +1061,7 @@ const QRRoomManager: React.FC = () => {
                 <div>
                   <h2 className="text-xl font-semibold">{selectedRoom.name}</h2>
                   <p className="text-muted-foreground">
-                    {locations.find(l => l.id === selectedRoom.location)?.name || selectedRoom.location}
+                    {getLocationNameById(selectedRoom.location)}
                   </p>
                 </div>
                 <Button variant="outline" onClick={() => setActiveTabId('rooms')}>
@@ -793,10 +1130,10 @@ const QRRoomManager: React.FC = () => {
                   id="interval"
                   type="number"
                   min={1}
-                  value={currentSchedule.interval || 1}
+                  value={currentSchedule.interval_hours || 1}
                   onChange={(e) => setCurrentSchedule({
                     ...currentSchedule,
-                    interval: Number(e.target.value)
+                    interval_hours: Number(e.target.value)
                   })}
                 />
               </div>
