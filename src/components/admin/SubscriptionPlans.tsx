@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from "@/integrations/supabase/client";
 
 interface Plan {
   id: string;
@@ -39,6 +38,55 @@ interface SubscriptionPlansProps {
   onSubscriptionChange?: () => void;
 }
 
+const MOCK_PLANS: Plan[] = [
+  {
+    id: '1',
+    name: 'Basic Plan',
+    description: 'For small businesses',
+    price: 999,
+    max_rooms: 5,
+    features: ['5 QR rooms', 'Basic cleaning checklists', 'Email support'],
+    active: true
+  },
+  {
+    id: '2',
+    name: 'Standard Plan',
+    description: 'For growing businesses',
+    price: 2999,
+    max_rooms: 15,
+    features: ['15 QR rooms', 'Custom cleaning checklists', 'Priority support', 'Room analytics'],
+    active: true
+  },
+  {
+    id: '3',
+    name: 'Premium Plan',
+    description: 'For large businesses',
+    price: 4999,
+    max_rooms: 50,
+    features: ['50 QR rooms', 'Advanced analytics', '24/7 support', 'Custom branding'],
+    active: true
+  }
+];
+
+// Mock subscription data for demo
+const MOCK_SUBSCRIPTION: SubscriptionInfo = {
+  has_subscription: true,
+  is_active: true,
+  can_create_rooms: true,
+  rooms_count: 3,
+  max_rooms: 999, // Demo has high limit
+  rooms_remaining: 996,
+  subscription: {
+    status: 'active',
+    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    plan: {
+      name: 'Demo Plan',
+      price: 0,
+      features: ['Unlimited QR rooms in demo mode', 'Basic cleaning checklists', 'Email support']
+    }
+  }
+};
+
 const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ orgId, onSubscriptionChange }) => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,47 +96,10 @@ const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ orgId, onSubscrip
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        // Fixed: Using the mock client correctly
-        const result = await Promise.resolve({ 
-          data: [
-            {
-              id: '1',
-              name: 'Basic Plan',
-              description: 'For small businesses',
-              price: 999,
-              max_rooms: 5,
-              features: ['5 QR rooms', 'Basic cleaning checklists', 'Email support'],
-              active: true
-            },
-            {
-              id: '2',
-              name: 'Standard Plan',
-              description: 'For growing businesses',
-              price: 2999,
-              max_rooms: 15,
-              features: ['15 QR rooms', 'Custom cleaning checklists', 'Priority support', 'Room analytics'],
-              active: true
-            },
-            {
-              id: '3',
-              name: 'Premium Plan',
-              description: 'For large businesses',
-              price: 4999,
-              max_rooms: 50,
-              features: ['50 QR rooms', 'Advanced analytics', '24/7 support', 'Custom branding'],
-              active: true
-            }
-          ],
-          error: null
-        });
-        
-        if (result.error) {
-          throw result.error;
-        }
-        
-        setPlans(result.data);
+        // Use hardcoded plans data
+        setPlans(MOCK_PLANS);
       } catch (error) {
-        console.error('Error fetching plans:', error);
+        console.error('Error loading plans:', error);
         toast.error('Failed to load subscription plans');
       } finally {
         setLoading(false);
@@ -97,35 +108,8 @@ const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ orgId, onSubscrip
 
     const checkSubscription = async () => {
       try {
-        // Fixed: Using the mock client correctly for function invocation
-        const response = await supabase.functions.invoke('check-subscription', {
-          body: { orgId }
-        });
-
-        if (response.error) {
-          throw response.error;
-        }
-
-        // Mock subscription data for demo
-        const mockSubscription = {
-          has_subscription: true,
-          is_active: true,
-          can_create_rooms: true,
-          rooms_count: 3,
-          max_rooms: 5,
-          rooms_remaining: 2,
-          subscription: {
-            status: 'active',
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            plan: {
-              name: 'Basic Plan',
-              price: 999,
-              features: ['5 QR rooms', 'Basic cleaning checklists', 'Email support']
-            }
-          }
-        };
-
-        setCurrentSubscription(mockSubscription);
+        // Use the mock subscription data
+        setCurrentSubscription(MOCK_SUBSCRIPTION);
       } catch (error) {
         console.error('Error checking subscription:', error);
       }
@@ -140,16 +124,36 @@ const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ orgId, onSubscrip
   const handleSubscribe = async (planId: string) => {
     try {
       setSubscribing(true);
-      // Fixed: Using the mock client correctly
-      const response = await supabase.functions.invoke('create-checkout', {
-        body: { planId, orgId }
-      });
-
-      if (response.error) throw response.error;
-
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       // Mock checkout URL for demo
       const mockCheckoutUrl = '#/mock-checkout';
-      window.location.href = mockCheckoutUrl;
+      
+      // Show success toast
+      toast.success('Redirecting to checkout...');
+      
+      // Simulate redirect
+      console.log(`Would redirect to checkout for plan ${planId}`);
+      
+      // For demo, we'll just update the subscription locally
+      const selectedPlan = plans.find(p => p.id === planId);
+      if (selectedPlan) {
+        setCurrentSubscription({
+          ...MOCK_SUBSCRIPTION,
+          subscription: {
+            ...MOCK_SUBSCRIPTION.subscription!,
+            plan: {
+              name: selectedPlan.name,
+              price: selectedPlan.price,
+              features: selectedPlan.features
+            }
+          }
+        });
+        toast.success(`Subscribed to ${selectedPlan.name}`);
+        if (onSubscriptionChange) onSubscriptionChange();
+      }
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast.error('Failed to start subscription process');
@@ -161,16 +165,16 @@ const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ orgId, onSubscrip
   const handleManageSubscription = async () => {
     try {
       setSubscribing(true);
-      // Fixed: Using the mock client correctly
-      const response = await supabase.functions.invoke('manage-subscription', {
-        body: { orgId }
-      });
-
-      if (response.error) throw response.error;
-
-      // Mock customer portal URL for demo
-      const mockPortalUrl = '#/mock-customer-portal';
-      window.location.href = mockPortalUrl;
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Show success toast
+      toast.success('Subscription management initiated');
+      
+      // For demo purposes, we'll just log this
+      console.log('Managing subscription for org:', orgId);
+      
     } catch (error) {
       console.error('Error opening customer portal:', error);
       toast.error('Failed to open subscription management portal');
@@ -198,11 +202,6 @@ const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ orgId, onSubscrip
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
-        <h2 className="text-2xl font-semibold">Subscription Plans</h2>
-        <p className="text-muted-foreground">
-          Choose a subscription plan to start creating QR codes and managing rooms.
-        </p>
-
         {currentSubscription && currentSubscription.has_subscription && currentSubscription.subscription && (
           <Card className="border-2 border-primary bg-primary/5 mb-4">
             <CardHeader>

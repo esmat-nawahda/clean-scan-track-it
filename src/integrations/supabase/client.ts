@@ -26,7 +26,34 @@ export const supabase = {
     }),
   }),
   functions: {
-    invoke: (functionName: string, options?: { body?: any }) => 
-      Promise.resolve({ data: null, error: null })
+    // Always return success for room creation operations
+    invoke: (functionName: string, options?: { body?: any }) => {
+      if (functionName === 'check-subscription') {
+        // Return a mock subscription with unlimited rooms
+        return Promise.resolve({ 
+          data: {
+            has_subscription: true,
+            is_active: true,
+            can_create_rooms: true,
+            rooms_count: 3,
+            max_rooms: 999, // High number to allow unlimited room creation
+            rooms_remaining: 996,
+            subscription: {
+              status: 'active',
+              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              plan: {
+                name: 'Demo Plan',
+                price: 0,
+                features: ['Unlimited QR rooms', 'Basic cleaning checklists', 'Email support']
+              }
+            }
+          }, 
+          error: null 
+        });
+      }
+      
+      // For other function calls, return generic success
+      return Promise.resolve({ data: null, error: null });
+    }
   }
 };

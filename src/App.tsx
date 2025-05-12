@@ -19,6 +19,7 @@ import ReportsPage from "./pages/admin/ReportsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import QRManagementPage from "./pages/admin/QRManagementPage";
 import SubscriptionSuccessPage from "./pages/admin/SubscriptionSuccessPage";
+import SubscriptionPage from "./pages/admin/SubscriptionPage";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="staff" element={<StaffPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="subscription" element={<SubscriptionPage />} />
             <Route path="subscription-success" element={<SubscriptionSuccessPage />} />
           </Route>
           

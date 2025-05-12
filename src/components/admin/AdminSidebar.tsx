@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Check, Database, File as FileIcon, Settings, Users, QrCode, Building, AlertTriangle } from 'lucide-react';
+import { Check, Database, File as FileIcon, Settings, Users, QrCode, Building, AlertTriangle, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AdminSidebarProps {
@@ -102,6 +102,13 @@ const AdminSidebar = ({ onLogout, clientName, clientType, collapsed, toggleSideb
               <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
                 <Settings className="h-5 w-5" />
                 {!collapsed && <span className="ml-2 text-base">Settings</span>}
+              </div>
+            </NavLink>
+            
+            <NavLink to="/admin/subscription" className={getNavClass}>
+              <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
+                <CreditCard className="h-5 w-5" />
+                {!collapsed && <span className="ml-2 text-base">Subscription</span>}
               </div>
             </NavLink>
           </div>
