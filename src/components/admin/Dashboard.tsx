@@ -26,8 +26,72 @@ import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWi
 import { CalendarIcon, TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
+import RoomAlerts, { Room } from './RoomAlerts';
 
 const Dashboard = () => {
+  // Mock data for rooms with cleaning status
+  const [rooms, setRooms] = useState<Room[]>([
+    { 
+      id: '1', 
+      name: 'Executive Suite', 
+      location: 'Floor 5', 
+      templateId: 'template1',
+      lastCleaned: '2025-05-08',
+      nextCleaningDue: '2025-05-10',
+      status: 'overdue'
+    },
+    { 
+      id: '2', 
+      name: 'Conference Room A', 
+      location: 'Floor 3', 
+      templateId: 'template2',
+      lastCleaned: '2025-05-09',
+      nextCleaningDue: '2025-05-11',
+      status: 'needs-cleaning'
+    },
+    { 
+      id: '3', 
+      name: 'Main Lobby Bathroom', 
+      location: 'Floor 1', 
+      templateId: 'template3',
+      lastCleaned: '2025-05-07',
+      nextCleaningDue: '2025-05-09',
+      status: 'overdue'
+    },
+    { 
+      id: '4', 
+      name: 'Employee Lounge', 
+      location: 'Floor 2', 
+      templateId: 'template1',
+      lastCleaned: '2025-05-10',
+      nextCleaningDue: '2025-05-13',
+      status: 'needs-cleaning'
+    }
+  ]);
+
+  // Handle marking a room as cleaned
+  const handleMarkAsCleaned = (roomId: string) => {
+    setRooms(prevRooms => 
+      prevRooms.map(room => 
+        room.id === roomId 
+          ? { 
+              ...room, 
+              status: 'clean' as const, 
+              lastCleaned: format(new Date(), 'yyyy-MM-dd'),
+              nextCleaningDue: format(addDays(new Date(), 3), 'yyyy-MM-dd')
+            } 
+          : room
+      )
+    );
+  };
+
+  // Helper function to add days to a date
+  const addDays = (date: Date, days: number) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  };
+  
   // Date filtering state
   const [dateRange, setDateRange] = useState<DateRange | { from: Date; to: Date }>({
     from: subDays(new Date(), 7),
@@ -212,6 +276,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      <RoomAlerts rooms={rooms} onMarkAsCleaned={handleMarkAsCleaned} />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
