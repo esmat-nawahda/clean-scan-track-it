@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -106,7 +105,7 @@ const AdminSidebar = ({ onLogout, clientName, clientType, collapsed, toggleSideb
   const currentPath = location.pathname;
   
   const getNavClass = ({ isActive }: { isActive: boolean }) => 
-    isActive ? "bg-accent/50 text-accent-foreground font-medium" : "hover:bg-accent/30";
+    isActive ? "bg-gray-800 text-white font-medium" : "hover:bg-accent/30";
   
   return (
     <aside
