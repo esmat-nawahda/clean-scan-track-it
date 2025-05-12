@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,13 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
 
 const Dashboard = () => {
   // Date filtering state
-  const [dateRange, setDateRange] = useState<{
-    from: Date;
-    to: Date;
-  }>({
+  const [dateRange, setDateRange] = useState<DateRange | { from: Date; to: Date }>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
@@ -51,7 +50,9 @@ const Dashboard = () => {
 
   // Filter data based on selected date range
   const filteredWeeklyData = allWeeklyData.filter(item => 
-    isWithinInterval(item.date, { start: dateRange.from, end: dateRange.to })
+    dateRange.from && (dateRange.to 
+      ? isWithinInterval(item.date, { start: dateRange.from, end: dateRange.to })
+      : item.date >= dateRange.from)
   );
 
   // Date range presets
@@ -149,8 +150,8 @@ const Dashboard = () => {
                   defaultMonth={dateRange?.from}
                   selected={dateRange}
                   onSelect={(range) => {
-                    if (range?.from && range?.to) {
-                      setDateRange(range);
+                    if (range?.from) {
+                      setDateRange(range.to ? range : { ...range, to: range.from });
                       setSelectedPreset("custom");
                     }
                   }}
