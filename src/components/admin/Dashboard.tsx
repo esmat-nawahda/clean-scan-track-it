@@ -2,13 +2,28 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  BarChart, 
+  LineChart, 
+  Bar, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 
@@ -46,6 +61,40 @@ const Dashboard = () => {
     { name: 'Lobby', total: 18 },
     { name: 'Offices', total: 25 },
     { name: 'Meeting Rooms', total: 15 },
+  ];
+
+  // New data for additional metrics
+  const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981'];
+  
+  const staffPerformanceData = [
+    { name: 'John Doe', completions: 42, onTime: 39, quality: 4.8 },
+    { name: 'Sarah Johnson', completions: 38, onTime: 35, quality: 4.9 },
+    { name: 'Michael Brown', completions: 29, onTime: 26, quality: 4.5 },
+    { name: 'Emma Wilson', completions: 35, onTime: 33, quality: 4.7 },
+    { name: 'Robert Taylor', completions: 25, onTime: 22, quality: 4.6 },
+  ];
+  
+  const issueReportData = [
+    { name: 'Supply Shortage', value: 12 },
+    { name: 'Equipment Issues', value: 8 },
+    { name: 'Area Inaccessible', value: 5 },
+    { name: 'Maintenance Needed', value: 15 },
+    { name: 'Other', value: 3 },
+  ];
+  
+  const performanceTrendData = [
+    { month: 'Jan', completions: 210, issues: 18 },
+    { month: 'Feb', completions: 240, issues: 15 },
+    { month: 'Mar', completions: 280, issues: 20 },
+    { month: 'Apr', completions: 310, issues: 12 },
+    { month: 'May', completions: 345, issues: 10 },
+  ];
+
+  const incompleteTasksData = [
+    { name: 'Executive Suite', value: 3, priority: 'High' },
+    { name: 'First Floor Bathroom', value: 2, priority: 'Medium' },
+    { name: 'Cafeteria', value: 4, priority: 'High' },
+    { name: 'Conference Rooms', value: 1, priority: 'Low' },
   ];
 
   // Filter data based on selected date range
@@ -164,14 +213,18 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Cleanings</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">2,345</div>
-            <div className="text-xs text-muted-foreground mt-1">+5.2% from last month</div>
+            <div className="flex items-center text-xs text-muted-foreground mt-1">
+              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+              <span className="text-green-500 font-medium">+5.2%</span>
+              <span className="ml-1">from last month</span>
+            </div>
           </CardContent>
         </Card>
         
@@ -181,7 +234,11 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">24</div>
-            <div className="text-xs text-muted-foreground mt-1">+2 new this month</div>
+            <div className="flex items-center text-xs text-muted-foreground mt-1">
+              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+              <span className="text-green-500 font-medium">+2</span>
+              <span className="ml-1">new this month</span>
+            </div>
           </CardContent>
         </Card>
         
@@ -191,7 +248,23 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">12</div>
-            <div className="text-xs text-muted-foreground mt-1">No change from last month</div>
+            <div className="flex items-center text-xs text-muted-foreground mt-1">
+              <span>No change from last month</span>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Issue Reports</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">43</div>
+            <div className="flex items-center text-xs text-muted-foreground mt-1">
+              <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
+              <span className="text-green-500 font-medium">-7.3%</span>
+              <span className="ml-1">from last month</span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -200,7 +273,9 @@ const Dashboard = () => {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">
@@ -248,6 +323,90 @@ const Dashboard = () => {
             </Card>
           </div>
           
+          {/* New section - Issues by category */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Issues by Category</CardTitle>
+                <CardDescription>
+                  Distribution of reported issues
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={issueReportData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {issueReportData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="col-span-4">
+              <CardHeader>
+                <CardTitle>Incomplete Tasks</CardTitle>
+                <CardDescription>
+                  Tasks that need attention
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Tasks</TableHead>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {incompleteTasksData.map((item) => (
+                        <TableRow key={item.name}>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell>{item.value}</TableCell>
+                          <TableCell>
+                            <div className={`px-2 py-1 rounded-full text-xs inline-flex items-center ${
+                              item.priority === 'High' 
+                                ? 'bg-red-100 text-red-800' 
+                                : item.priority === 'Medium'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-green-100 text-green-800'
+                            }`}>
+                              {item.priority}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <AlertTriangle className="mr-1 h-4 w-4 text-amber-500" />
+                              <span className="text-sm">Pending</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
           <Card>
             <CardHeader>
               <CardTitle>Recent Cleaning Activities</CardTitle>
@@ -285,14 +444,91 @@ const Dashboard = () => {
         <TabsContent value="analytics" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Advanced Analytics</CardTitle>
+              <CardTitle>Performance Trends</CardTitle>
               <CardDescription>
-                More detailed analytics will be available here
+                Monthly cleaning completions vs issues reported
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-center h-40 border rounded-md border-dashed text-muted-foreground">
-                Advanced analytics charts and filters coming soon
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={performanceTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Line 
+                      yAxisId="left"
+                      type="monotone" 
+                      dataKey="completions" 
+                      stroke="#8B5CF6" 
+                      strokeWidth={2} 
+                      name="Cleanings Completed"
+                    />
+                    <Line 
+                      yAxisId="right"
+                      type="monotone" 
+                      dataKey="issues" 
+                      stroke="#F97316" 
+                      strokeWidth={2}
+                      name="Issues Reported" 
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="performance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Staff Performance</CardTitle>
+              <CardDescription>
+                Cleaning metrics by staff member
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Staff Member</TableHead>
+                      <TableHead>Tasks Completed</TableHead>
+                      <TableHead>On-time %</TableHead>
+                      <TableHead>Quality Rating</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {staffPerformanceData.map((staff) => (
+                      <TableRow key={staff.name}>
+                        <TableCell className="font-medium">{staff.name}</TableCell>
+                        <TableCell>{staff.completions}</TableCell>
+                        <TableCell>{Math.round((staff.onTime / staff.completions) * 100)}%</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <span className="mr-2">{staff.quality.toFixed(1)}</span>
+                            <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-purple-500 rounded-full" 
+                                style={{ width: `${(staff.quality / 5) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <CheckCircle className="mr-1 h-4 w-4 text-green-500" />
+                            <span className="text-sm">Good</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
