@@ -6,14 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { Phone } from 'lucide-react';
 
 // Mock staff data
 const staffMembers = [
-  { id: 1, name: 'John Doe', position: 'Janitor', cleanings: 145 },
-  { id: 2, name: 'Sarah Johnson', position: 'Supervisor', cleanings: 98 },
-  { id: 3, name: 'Michael Brown', position: 'Janitor', cleanings: 132 },
-  { id: 4, name: 'Emma Wilson', position: 'Janitor', cleanings: 112 },
-  { id: 5, name: 'Robert Garcia', position: 'Supervisor', cleanings: 76 },
+  { id: 1, name: 'John Doe', position: 'Janitor', phoneNumber: '(555) 123-4567', cleanings: 145 },
+  { id: 2, name: 'Sarah Johnson', position: 'Supervisor', phoneNumber: '(555) 234-5678', cleanings: 98 },
+  { id: 3, name: 'Michael Brown', position: 'Janitor', phoneNumber: '(555) 345-6789', cleanings: 132 },
+  { id: 4, name: 'Emma Wilson', position: 'Janitor', phoneNumber: '(555) 456-7890', cleanings: 112 },
+  { id: 5, name: 'Robert Garcia', position: 'Supervisor', phoneNumber: '(555) 567-8901', cleanings: 76 },
 ];
 
 const StaffManager = () => {
@@ -47,6 +48,7 @@ const StaffManager = () => {
                       <th className="py-3 px-4 text-left font-medium">ID</th>
                       <th className="py-3 px-4 text-left font-medium">Name</th>
                       <th className="py-3 px-4 text-left font-medium">Position</th>
+                      <th className="py-3 px-4 text-left font-medium">Phone Number</th>
                       <th className="py-3 px-4 text-left font-medium">Total Cleanings</th>
                       <th className="py-3 px-4 text-left font-medium">Actions</th>
                     </tr>
@@ -57,6 +59,12 @@ const StaffManager = () => {
                         <td className="py-3 px-4">{staff.id}</td>
                         <td className="py-3 px-4">{staff.name}</td>
                         <td className="py-3 px-4">{staff.position}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            {staff.phoneNumber}
+                          </div>
+                        </td>
                         <td className="py-3 px-4">{staff.cleanings}</td>
                         <td className="py-3 px-4">
                           <div className="flex space-x-2">
@@ -96,13 +104,22 @@ const StaffManager = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="staff@example.com" />
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <div className="flex">
+                    <div className="flex items-center px-3 border border-r-0 rounded-l-md border-input bg-muted">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      id="phoneNumber"
+                      className="rounded-l-none"
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" placeholder="(123) 456-7890" />
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="staff@example.com" />
                 </div>
                 
                 <Button type="submit" className="w-full">
