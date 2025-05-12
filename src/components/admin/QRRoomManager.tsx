@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -913,4 +914,290 @@ const QRRoomManager: React.FC = () => {
                 </div>
                 
                 <DialogFooter>
-                  <Button variant="
+                  <Button variant="outline" onClick={() => setIsCreateRoomOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateRoom}>
+                    Create Room
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          {/* Room list */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rooms.length > 0 ? (
+              rooms.map(room => (
+                <Card key={room.id} className="overflow-hidden">
+                  <CardHeader className={`
+                    ${room.status === 'clean' ? 'bg-green-50' : 
+                      room.status === 'needs-cleaning' ? 'bg-amber-50' : 'bg-red-50'}
+                  `}>
+                    <div className="flex justify-between">
+                      <CardTitle className="text-lg">{room.name}</CardTitle>
+                      <div className={`
+                        rounded-full h-3 w-3 mt-1
+                        ${room.status === 'clean' ? 'bg-green-500' : 
+                          room.status === 'needs-cleaning' ? 'bg-amber-500' : 'bg-red-500'}
+                      `} />
+                    </div>
+                    <CardDescription>
+                      <div className="flex items-center gap-1 text-sm">
+                        <MapPin className="h-3 w-3" />
+                        {getLocationNameById(room.location)}
+                      </div>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Template:</span>
+                        <span>{getTemplateNameById(room.templateId)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Cleaning:</span>
+                        <span>{getRoomScheduleText(room.id)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Status:</span>
+                        <span className={`
+                          ${room.status === 'clean' ? 'text-green-600' : 
+                            room.status === 'needs-cleaning' ? 'text-amber-600' : 'text-red-600 font-medium'}
+                        `}>
+                          {room.status === 'clean' ? 'Clean' : 
+                            room.status === 'needs-cleaning' ? 'Needs Cleaning' : 'Overdue'}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t bg-muted/50 flex justify-between">
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleSelectRoom(room)}
+                      >
+                        <QrCode className="h-4 w-4" />
+                        <span className="sr-only">View QR Code</span>
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => openScheduleDialog(room)}
+                      >
+                        <CalendarClock className="h-4 w-4" />
+                        <span className="sr-only">Set Schedule</span>
+                      </Button>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="default" 
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleMarkAsCleaned(room.id)}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Mark as Cleaned
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-full text-center p-8 bg-muted rounded-lg">
+                <p className="text-muted-foreground mb-4">No rooms created yet.</p>
+                <Button onClick={() => setIsCreateRoomOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add your first room
+                </Button>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="templates">
+          <ChecklistTemplateManager 
+            templates={templates} 
+            onCreateTemplate={handleTemplateCreate}
+            onUpdateTemplate={handleTemplateUpdate}
+            onDeleteTemplate={handleTemplateDelete}
+            onDuplicateTemplate={handleTemplateDuplicate}
+          />
+        </TabsContent>
+        
+        <TabsContent value="locations">
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Manage Locations</h2>
+              <Dialog open={isCreateLocationOpen} onOpenChange={setIsCreateLocationOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Location
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Location</DialogTitle>
+                    <DialogDescription>
+                      Add details for the new location
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="locationName">Location Name</Label>
+                      <Input 
+                        id="locationName"
+                        value={newLocation.name}
+                        onChange={(e) => handleNewLocationChange('name', e.target.value)}
+                        placeholder="e.g., Main Office"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="locationCode">Location Code</Label>
+                      <Input 
+                        id="locationCode"
+                        value={newLocation.code}
+                        onChange={(e) => handleNewLocationChange('code', e.target.value)}
+                        placeholder="e.g., main-office"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Used for identifying the location in URLs and reports
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsCreateLocationOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={addLocation}>
+                      Create Location
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            {/* Locations list */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {locations.length > 0 ? (
+                locations.map(location => (
+                  <Card key={location.id}>
+                    <CardHeader>
+                      <CardTitle>{location.name}</CardTitle>
+                      <CardDescription>Code: {location.code}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Rooms:</span>
+                          <span>{rooms.filter(r => r.location === location.id).length}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full text-center p-8 bg-muted rounded-lg">
+                  <p className="text-muted-foreground mb-4">No locations created yet.</p>
+                  <Button onClick={() => setIsCreateLocationOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add your first location
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+        
+        {selectedRoom && (
+          <TabsContent value="qrcode">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">QR Code for {selectedRoom.name}</h2>
+                <Button variant="outline" onClick={() => window.print()}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print QR Code
+                </Button>
+              </div>
+              
+              <div className="flex flex-col items-center space-y-4">
+                <QRCodeGenerator value={selectedRoom.qrCodeUrl} size={300} />
+                <div className="text-center">
+                  <p className="font-semibold mb-1">{selectedRoom.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {getLocationNameById(selectedRoom.location)}
+                  </p>
+                  <p className="text-xs mt-2">{selectedRoom.qrCodeUrl}</p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        )}
+      </Tabs>
+      
+      {/* Schedule Dialog */}
+      <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Cleaning Schedule</DialogTitle>
+            <DialogDescription>
+              {selectedRoomForSchedule && (
+                <>Set how often "{selectedRoomForSchedule.name}" should be cleaned</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="frequency">Cleaning Frequency</Label>
+              <select
+                id="frequency"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={currentSchedule.frequency || 'hourly'}
+                onChange={(e) => setCurrentSchedule({ 
+                  ...currentSchedule, 
+                  frequency: e.target.value as 'hourly' | 'daily' | 'weekly' | 'custom' 
+                })}
+              >
+                <option value="hourly">Every hour</option>
+                <option value="daily">Once a day</option>
+                <option value="weekly">Once a week</option>
+                <option value="custom">Custom interval</option>
+              </select>
+            </div>
+            
+            {currentSchedule.frequency === 'custom' && (
+              <div className="space-y-2">
+                <Label htmlFor="intervalHours">Custom Interval (hours)</Label>
+                <Input 
+                  id="intervalHours"
+                  type="number" 
+                  min={1}
+                  value={currentSchedule.interval_hours || 1}
+                  onChange={(e) => setCurrentSchedule({ 
+                    ...currentSchedule, 
+                    interval_hours: parseInt(e.target.value) 
+                  })}
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsScheduleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveSchedule}>
+              Save Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default QRRoomManager;
