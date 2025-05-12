@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import StaffSelector from '@/components/admin/StaffSelector';
-import { CheckCheck } from 'lucide-react';
+import { CheckCheck, Phone, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChecklistItem {
@@ -25,6 +25,12 @@ const locationNameMap: Record<string, string> = {
   'office-exec': 'Executive Office Suite',
 };
 
+// Admin contact information
+const adminContacts = {
+  name: "Facility Manager",
+  phone: "(555) 987-6543",
+};
+
 const CleaningChecklist = () => {
   const { locationId } = useParams<{ locationId: string }>();
   const navigate = useNavigate();
@@ -35,6 +41,7 @@ const CleaningChecklist = () => {
   const [selectedStaff, setSelectedStaff] = useState<{ id: number; name: string } | null>(null);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showContactInfo, setShowContactInfo] = useState(false);
   
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
     { id: 'floors', label: 'Floors cleaned and mopped', checked: false, color: 'bg-blue-100 border-blue-300' },
@@ -141,6 +148,34 @@ const CleaningChecklist = () => {
               placeholder="Enter any additional notes or issues (optional)"
               rows={3}
             />
+          </div>
+
+          {/* Emergency contact section */}
+          <div className="pt-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full flex items-center justify-center gap-2"
+              onClick={() => setShowContactInfo(!showContactInfo)}
+            >
+              <AlertCircle className="h-4 w-4" />
+              <span>Need assistance? Contact admin</span>
+            </Button>
+            
+            {showContactInfo && (
+              <div className="mt-3 p-4 bg-muted/50 rounded-lg border border-border">
+                <div className="font-medium mb-1">
+                  {adminContacts.name}
+                </div>
+                <a 
+                  href={`tel:${adminContacts.phone}`}
+                  className="flex items-center gap-2 text-primary hover:underline"
+                >
+                  <Phone className="h-4 w-4" />
+                  {adminContacts.phone}
+                </a>
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter>
