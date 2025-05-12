@@ -8,8 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import StaffSelector from '@/components/admin/StaffSelector';
-import { CheckCheck, Phone, AlertCircle } from 'lucide-react';
+import { CheckCheck, Phone, AlertCircle, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage, Language } from '@/contexts/LanguageContext';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 
 interface ChecklistItem {
   id: string;
@@ -18,11 +26,27 @@ interface ChecklistItem {
   color: string;
 }
 
-const locationNameMap: Record<string, string> = {
-  'bathroom-floor1': 'First Floor Bathroom',
-  'kitchen-main': 'Main Kitchen',
-  'lobby-entrance': 'Main Lobby',
-  'office-exec': 'Executive Office Suite',
+const locationNameMap: Record<string, Record<Language, string>> = {
+  'bathroom-floor1': {
+    en: 'First Floor Bathroom',
+    es: 'Baño del Primer Piso',
+    fr: 'Toilettes du Premier Étage'
+  },
+  'kitchen-main': {
+    en: 'Main Kitchen',
+    es: 'Cocina Principal',
+    fr: 'Cuisine Principale'
+  },
+  'lobby-entrance': {
+    en: 'Main Lobby',
+    es: 'Vestíbulo Principal',
+    fr: 'Hall Principal'
+  },
+  'office-exec': {
+    en: 'Executive Office Suite',
+    es: 'Suite de Oficinas Ejecutivas',
+    fr: 'Suite de Bureau Exécutif'
+  },
 };
 
 // Admin contact information
@@ -34,7 +58,12 @@ const adminContacts = {
 const CleaningChecklist = () => {
   const { locationId } = useParams<{ locationId: string }>();
   const navigate = useNavigate();
-  const locationName = locationNameMap[locationId || ''] || 'Unknown Location';
+  const { t, language, changeLanguage } = useLanguage();
+  
+  const locationName = locationId ? 
+    (locationNameMap[locationId]?.[language] || locationNameMap[locationId]?.['en']) : 
+    t('unknownLocation');
+    
   const currentDate = format(new Date(), 'PPP');
   const currentTime = format(new Date(), 'p');
   
@@ -43,13 +72,18 @@ const CleaningChecklist = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
   
-  const [checklist, setChecklist] = useState<ChecklistItem[]>([
-    { id: 'floors', label: 'Floors cleaned and mopped', checked: false, color: 'bg-blue-100 border-blue-300' },
-    { id: 'surfaces', label: 'All surfaces wiped and sanitized', checked: false, color: 'bg-green-100 border-green-300' },
-    { id: 'trash', label: 'Trash emptied and replaced', checked: false, color: 'bg-amber-100 border-amber-300' },
-    { id: 'supplies', label: 'Supplies restocked', checked: false, color: 'bg-purple-100 border-purple-300' },
-    { id: 'fixtures', label: 'Fixtures cleaned and polished', checked: false, color: 'bg-pink-100 border-pink-300' },
-  ]);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+
+  // Initialize checklist based on current language
+  useEffect(() => {
+    setChecklist([
+      { id: 'floors', label: t('floors'), checked: false, color: 'bg-blue-100 border-blue-300' },
+      { id: 'surfaces', label: t('surfaces'), checked: false, color: 'bg-green-100 border-green-300' },
+      { id: 'trash', label: t('trash'), checked: false, color: 'bg-amber-100 border-amber-300' },
+      { id: 'supplies', label: t('supplies'), checked: false, color: 'bg-purple-100 border-purple-300' },
+      { id: 'fixtures', label: t('fixtures'), checked: false, color: 'bg-pink-100 border-pink-300' },
+    ]);
+  }, [language, t]);
 
   const toggleChecklistItem = (id: string) => {
     setChecklist(checklist.map(item => 
@@ -61,12 +95,12 @@ const CleaningChecklist = () => {
     e.preventDefault();
     
     if (!selectedStaff) {
-      toast.error('Please select your name');
+      toast.error(t('selectName'));
       return;
     }
     
     if (checklist.some(item => !item.checked)) {
-      toast.error('Please complete all checklist items');
+      toast.error(t('completeChecklist'));
       return;
     }
     
@@ -76,10 +110,10 @@ const CleaningChecklist = () => {
       // In a real app, this would be an API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      toast.success('Cleaning record submitted successfully!');
+      toast.success(t('submitSuccess'));
       navigate('/success');
     } catch (error) {
-      toast.error('Failed to submit cleaning record');
+      toast.error(t('submitError'));
       console.error('Error submitting form:', error);
     } finally {
       setIsSubmitting(false);
@@ -90,14 +124,34 @@ const CleaningChecklist = () => {
     <form onSubmit={handleSubmit}>
       <Card className="w-full max-w-md mx-auto">
         <CardHeader>
-          <CardTitle>{locationName}</CardTitle>
+          <div className="flex justify-between items-center mb-2">
+            <CardTitle>{locationName}</CardTitle>
+            <Select
+              value={language}
+              onValueChange={(value) => changeLanguage(value as Language)}
+            >
+              <SelectTrigger className="w-[130px]">
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    {t(language)}
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t('english')}</SelectItem>
+                <SelectItem value="es">{t('spanish')}</SelectItem>
+                <SelectItem value="fr">{t('french')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <CardDescription>
             {currentDate} at {currentTime}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>Your Name</Label>
+            <Label>{t('yourName')}</Label>
             <StaffSelector 
               compact 
               onStaffSelect={setSelectedStaff} 
@@ -106,7 +160,7 @@ const CleaningChecklist = () => {
           </div>
           
           <div className="space-y-4">
-            <Label className="text-lg font-medium">Cleaning Checklist</Label>
+            <Label className="text-lg font-medium">{t('cleaningChecklist')}</Label>
             <div className="space-y-4">
               {checklist.map((item) => (
                 <div 
@@ -140,12 +194,12 @@ const CleaningChecklist = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
+            <Label htmlFor="notes">{t('additionalNotes')}</Label>
             <Textarea 
               id="notes" 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Enter any additional notes or issues (optional)"
+              placeholder={t('notesPlaceholder')}
               rows={3}
             />
           </div>
@@ -159,13 +213,13 @@ const CleaningChecklist = () => {
               onClick={() => setShowContactInfo(!showContactInfo)}
             >
               <AlertCircle className="h-4 w-4" />
-              <span>Need assistance? Contact admin</span>
+              <span>{t('needAssistance')}</span>
             </Button>
             
             {showContactInfo && (
               <div className="mt-3 p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="font-medium mb-1">
-                  {adminContacts.name}
+                  {t('facilityManager')}
                 </div>
                 <a 
                   href={`tel:${adminContacts.phone}`}
@@ -184,7 +238,7 @@ const CleaningChecklist = () => {
             className="w-full text-lg py-6" 
             disabled={isSubmitting || !selectedStaff}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Cleaning Record'}
+            {isSubmitting ? t('submitting') : t('submit')}
           </Button>
         </CardFooter>
       </Card>
