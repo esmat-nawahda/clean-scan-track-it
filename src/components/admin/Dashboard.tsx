@@ -1,10 +1,26 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
+  // Date filtering state
+  const [dateRange, setDateRange] = useState<{
+    from: Date;
+    to: Date;
+  }>({
+    from: subDays(new Date(), 7),
+    to: new Date(),
+  });
+  const [selectedPreset, setSelectedPreset] = useState<string>("last7Days");
+
   // For demo purposes, generate mock data
   const recentCleanings = [
     { id: 1, location: 'First Floor Bathroom', staff: 'John Doe', date: '2025-05-09 09:15 AM' },
@@ -15,14 +31,14 @@ const Dashboard = () => {
   ];
 
   // Mock chart data
-  const weeklyData = [
-    { name: 'Mon', total: 18 },
-    { name: 'Tue', total: 25 },
-    { name: 'Wed', total: 22 },
-    { name: 'Thu', total: 30 },
-    { name: 'Fri', total: 28 },
-    { name: 'Sat', total: 15 },
-    { name: 'Sun', total: 10 },
+  const allWeeklyData = [
+    { name: 'Mon', total: 18, date: subDays(new Date(), 6) },
+    { name: 'Tue', total: 25, date: subDays(new Date(), 5) },
+    { name: 'Wed', total: 22, date: subDays(new Date(), 4) },
+    { name: 'Thu', total: 30, date: subDays(new Date(), 3) },
+    { name: 'Fri', total: 28, date: subDays(new Date(), 2) },
+    { name: 'Sat', total: 15, date: subDays(new Date(), 1) },
+    { name: 'Sun', total: 10, date: new Date() },
   ];
 
   const locationData = [
@@ -33,8 +49,120 @@ const Dashboard = () => {
     { name: 'Meeting Rooms', total: 15 },
   ];
 
+  // Filter data based on selected date range
+  const filteredWeeklyData = allWeeklyData.filter(item => 
+    isWithinInterval(item.date, { start: dateRange.from, end: dateRange.to })
+  );
+
+  // Date range presets
+  const handlePresetChange = (preset: string) => {
+    setSelectedPreset(preset);
+    
+    const today = new Date();
+    let from = today;
+    let to = today;
+    
+    switch(preset) {
+      case "today":
+        from = today;
+        break;
+      case "yesterday":
+        from = subDays(today, 1);
+        to = subDays(today, 1);
+        break;
+      case "last2Days":
+        from = subDays(today, 2);
+        break;
+      case "last7Days":
+        from = subDays(today, 7);
+        break;
+      case "last30Days":
+        from = subDays(today, 30);
+        break;
+      case "thisWeek":
+        from = startOfWeek(today);
+        to = endOfWeek(today);
+        break;
+      case "lastMonth":
+        from = startOfMonth(subDays(today, 30));
+        to = endOfMonth(subDays(today, 30));
+        break;
+      case "custom":
+        // Keep the current custom range
+        return;
+    }
+    
+    setDateRange({ from, to });
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex items-center space-x-2">
+          <Select value={selectedPreset} onValueChange={handlePresetChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select date range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
+              <SelectItem value="last2Days">Last 2 days</SelectItem>
+              <SelectItem value="last7Days">Last 7 days</SelectItem>
+              <SelectItem value="last30Days">Last 30 days</SelectItem>
+              <SelectItem value="thisWeek">This week</SelectItem>
+              <SelectItem value="lastMonth">Last month</SelectItem>
+              <SelectItem value="custom">Custom range</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <div className="grid gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={"outline"}
+                  className={cn(
+                    "w-[300px] justify-start text-left font-normal",
+                    !dateRange && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                        {format(dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dateRange?.from}
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    if (range?.from && range?.to) {
+                      setDateRange(range);
+                      setSelectedPreset("custom");
+                    }
+                  }}
+                  numberOfMonths={2}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
@@ -76,15 +204,15 @@ const Dashboard = () => {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">
               <CardHeader>
-                <CardTitle>Weekly Cleaning Activity</CardTitle>
+                <CardTitle>Cleaning Activity</CardTitle>
                 <CardDescription>
-                  Total cleanings performed over the last 7 days
+                  Total cleanings performed during the selected date range
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={weeklyData}>
+                    <LineChart data={filteredWeeklyData.length > 0 ? filteredWeeklyData : allWeeklyData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
