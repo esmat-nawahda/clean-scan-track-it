@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -28,6 +29,33 @@ interface CleaningSchedule {
   last_cleaned?: string;
   next_cleaning_due?: string;
 }
+
+// Define return types for saveDataToSupabase function
+type RoomData = {
+  id: string;
+  name: string;
+  location_id: string;
+  template_id: string;
+  qr_code: string;
+  status: string;
+};
+
+type LocationData = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+type ScheduleData = {
+  id: string;
+  room_id: string;
+  frequency: string;
+  interval_hours: number | null;
+  last_cleaned: string | null;
+  next_cleaning_due: string | null;
+};
+
+type SaveDataReturn = RoomData | LocationData | ScheduleData | boolean | null;
 
 const QRRoomManager: React.FC = () => {
   // State variables
@@ -210,7 +238,7 @@ const QRRoomManager: React.FC = () => {
     dataType: 'room' | 'location' | 'template' | 'schedule', 
     action: 'create' | 'update' | 'delete',
     data: any
-  ) => {
+  ): Promise<SaveDataReturn> => {
     try {
       switch (dataType) {
         case 'room':
@@ -228,7 +256,7 @@ const QRRoomManager: React.FC = () => {
               .single();
             
             if (roomError) throw roomError;
-            return roomData;
+            return roomData as RoomData;
           } else if (action === 'update') {
             const { error: roomUpdateError } = await supabase
               .from('rooms')
@@ -238,6 +266,7 @@ const QRRoomManager: React.FC = () => {
               .eq('id', data.id);
             
             if (roomUpdateError) throw roomUpdateError;
+            return true;
           }
           break;
           
@@ -256,7 +285,7 @@ const QRRoomManager: React.FC = () => {
               .single();
             
             if (scheduleError) throw scheduleError;
-            return scheduleData;
+            return scheduleData as ScheduleData;
           } else if (action === 'update') {
             const { error: scheduleUpdateError } = await supabase
               .from('cleaning_schedules')
@@ -269,6 +298,7 @@ const QRRoomManager: React.FC = () => {
               .eq('id', data.id);
             
             if (scheduleUpdateError) throw scheduleUpdateError;
+            return true;
           }
           break;
           
@@ -285,7 +315,7 @@ const QRRoomManager: React.FC = () => {
               .single();
             
             if (locationError) throw locationError;
-            return locationData;
+            return locationData as LocationData;
           }
           break;
           
@@ -414,9 +444,12 @@ const QRRoomManager: React.FC = () => {
     
     try {
       // Create new location in Supabase
-      const locationData = await saveDataToSupabase('location', 'create', newLocation) as Location | null;
+      const result = await saveDataToSupabase('location', 'create', newLocation);
       
-      if (locationData) {
+      // Check if result is a location object (not boolean or null)
+      if (result && typeof result !== 'boolean' && 'id' in result && 'name' in result && 'code' in result) {
+        const locationData = result as LocationData;
+        
         // Update local state
         const newLocationObj: Location = {
           id: locationData.id,
@@ -495,9 +528,12 @@ const QRRoomManager: React.FC = () => {
       };
       
       // Save room to database
-      const savedRoom = await saveDataToSupabase('room', 'create', roomData);
+      const result = await saveDataToSupabase('room', 'create', roomData);
       
-      if (savedRoom) {
+      // Check if result is a room object (not boolean or null)
+      if (result && typeof result !== 'boolean' && 'id' in result && 'name' in result) {
+        const savedRoom = result as RoomData;
+        
         // Format the room object for our state
         const createdRoom: Room = {
           id: savedRoom.id,
@@ -523,16 +559,19 @@ const QRRoomManager: React.FC = () => {
           next_cleaning_due: nextDue.toISOString(),
         };
         
-        const savedSchedule = await saveDataToSupabase('schedule', 'create', scheduleData);
+        const scheduleResult = await saveDataToSupabase('schedule', 'create', scheduleData);
         
-        if (savedSchedule) {
+        // Check if scheduleResult is a schedule object (not boolean or null)
+        if (scheduleResult && typeof scheduleResult !== 'boolean' && 'id' in scheduleResult && 'room_id' in scheduleResult) {
+          const savedSchedule = scheduleResult as ScheduleData;
+          
           const newSchedule: CleaningSchedule = {
             id: savedSchedule.id,
             roomId: savedSchedule.room_id,
-            frequency: savedSchedule.frequency,
-            interval_hours: savedSchedule.interval_hours,
-            last_cleaned: savedSchedule.last_cleaned,
-            next_cleaning_due: savedSchedule.next_cleaning_due,
+            frequency: savedSchedule.frequency as 'hourly' | 'daily' | 'weekly' | 'custom',
+            interval_hours: savedSchedule.interval_hours || undefined,
+            last_cleaned: savedSchedule.last_cleaned || undefined,
+            next_cleaning_due: savedSchedule.next_cleaning_due || undefined,
           };
           
           setSchedules([...schedules, newSchedule]);
@@ -700,19 +739,25 @@ const QRRoomManager: React.FC = () => {
           next_cleaning_due: nextDue.toISOString()
         };
         
-        const savedSchedule = await saveDataToSupabase('schedule', 'create', newScheduleData);
+        const scheduleResult = await saveDataToSupabase('schedule', 'create', newScheduleData);
         
-        if (savedSchedule && typeof savedSchedule !== 'boolean') {
-          const newSchedule: CleaningSchedule = {
-            id: savedSchedule.id,
-            roomId: savedSchedule.room_id,
-            frequency: savedSchedule.frequency,
-            interval_hours: savedSchedule.interval_hours,
-            last_cleaned: savedSchedule.last_cleaned,
-            next_cleaning_due: savedSchedule.next_cleaning_due,
-          };
-          
-          setSchedules([...schedules, newSchedule]);
+        // Check if scheduleResult is a schedule object (not boolean or null)
+        if (scheduleResult && typeof scheduleResult !== 'boolean' && 'id' in scheduleResult) {
+          // We need to check the shape of the result to make TypeScript happy
+          if ('room_id' in scheduleResult && 'frequency' in scheduleResult) {
+            const savedSchedule = scheduleResult as ScheduleData;
+            
+            const newSchedule: CleaningSchedule = {
+              id: savedSchedule.id,
+              roomId: savedSchedule.room_id,
+              frequency: savedSchedule.frequency as 'hourly' | 'daily' | 'weekly' | 'custom',
+              interval_hours: savedSchedule.interval_hours || undefined,
+              last_cleaned: savedSchedule.last_cleaned || undefined,
+              next_cleaning_due: savedSchedule.next_cleaning_due || undefined,
+            };
+            
+            setSchedules([...schedules, newSchedule]);
+          }
         }
       }
       
