@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,11 +26,11 @@ const SubscriptionSuccessPage = () => {
 
     const verifySubscription = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('verify-subscription', {
+        const response = await supabase.functions.invoke('verify-subscription', {
           body: { sessionId, orgId, planId }
         });
 
-        if (error) throw error;
+        if (response.error) throw response.error;
         
         setSuccess(true);
       } catch (error) {

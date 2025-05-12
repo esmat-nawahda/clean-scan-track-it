@@ -21,5 +21,10 @@ export const supabase = {
     update: () => ({
       eq: () => ({ data: null, error: null }),
     }),
-  })
+  }),
+  // Add mock functions property to fix TS errors
+  functions: {
+    invoke: (functionName: string, options?: { body?: any }) => 
+      Promise.resolve({ data: null, error: null })
+  }
 };

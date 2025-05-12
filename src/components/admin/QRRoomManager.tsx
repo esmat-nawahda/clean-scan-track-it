@@ -1,3 +1,7 @@
+
+// Just updating the checkSubscriptionStatus function to use the updated supabase functions property
+// This is a very large file, so we're only updating the specific function with the error
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -97,13 +101,14 @@ const QRRoomManager: React.FC = () => {
     
     try {
       setCheckingSubscription(true);
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
+      // Fixed function call to use the proper invoke syntax
+      const response = await supabase.functions.invoke('check-subscription', {
         body: { orgId }
       });
       
-      if (error) throw error;
+      if (response.error) throw response.error;
       
-      setSubscriptionStatus(data);
+      setSubscriptionStatus(response.data);
     } catch (error) {
       console.error('Error checking subscription:', error);
       toast.error('Failed to check subscription status');
