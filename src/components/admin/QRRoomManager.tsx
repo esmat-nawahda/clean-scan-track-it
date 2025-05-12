@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -7,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, QrCode, Printer, CalendarClock, MapPin, Check, Loader2 } from 'lucide-react';
+import { Plus, QrCode, Printer, CalendarClock, MapPin, Check, Loader2, AlertCircle } from 'lucide-react';
 import QRCodeGenerator from './QRCodeGenerator';
 import ChecklistTemplateManager, { ChecklistTemplate } from './ChecklistTemplateManager';
 import RoomAlerts, { Room } from './RoomAlerts';
+import SubscriptionPlans from './SubscriptionPlans';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 
 // Types
 interface Location {
@@ -27,6 +28,15 @@ interface CleaningSchedule {
   interval_hours?: number; // In hours for custom frequency
   last_cleaned?: string;
   next_cleaning_due?: string;
+}
+
+interface SubscriptionStatus {
+  has_subscription: boolean;
+  is_active: boolean;
+  can_create_rooms: boolean;
+  rooms_count: number;
+  max_rooms: number;
+  rooms_remaining: number;
 }
 
 const QRRoomManager: React.FC = () => {
@@ -54,11 +64,53 @@ const QRRoomManager: React.FC = () => {
     interval_hours: 1
   });
   const [selectedRoomForSchedule, setSelectedRoomForSchedule] = useState<Room | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
   
   // Load data from localStorage on component mount
   useEffect(() => {
     loadDataFromLocalStorage();
+    // Check for organization ID from auth
+    const authData = localStorage.getItem('cleantrack-auth');
+    if (authData) {
+      try {
+        const parsedData = JSON.parse(authData);
+        if (parsedData.clientId) {
+          setOrgId(parsedData.clientId);
+        }
+      } catch (error) {
+        console.error('Error parsing auth data:', error);
+      }
+    }
   }, []);
+  
+  // Check subscription status when organization ID is available
+  useEffect(() => {
+    if (orgId) {
+      checkSubscriptionStatus();
+    }
+  }, [orgId]);
+  
+  const checkSubscriptionStatus = async () => {
+    if (!orgId) return;
+    
+    try {
+      setCheckingSubscription(true);
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        body: { orgId }
+      });
+      
+      if (error) throw error;
+      
+      setSubscriptionStatus(data);
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      toast.error('Failed to check subscription status');
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
   
   const loadDataFromLocalStorage = () => {
     setIsLoading(true);
@@ -299,6 +351,21 @@ const QRRoomManager: React.FC = () => {
       return;
     }
     
+    // Check subscription status first
+    if (!subscriptionStatus?.can_create_rooms) {
+      if (!subscriptionStatus?.has_subscription || !subscriptionStatus?.is_active) {
+        toast.error('You need an active subscription to create rooms');
+        setActiveTabId('subscription');
+        setIsCreateRoomOpen(false);
+        return;
+      } else if (subscriptionStatus.rooms_count >= subscriptionStatus.max_rooms) {
+        toast.error(`You've reached the maximum room limit (${subscriptionStatus.max_rooms}) for your plan`);
+        setActiveTabId('subscription');
+        setIsCreateRoomOpen(false);
+        return;
+      }
+    }
+    
     try {
       const roomId = uuidv4();
       const qrCode = `room-${Date.now()}`;
@@ -339,6 +406,11 @@ const QRRoomManager: React.FC = () => {
       setNewRoom({ name: '', location: '', templateId: '' });
       setIsCreateRoomOpen(false);
       toast.success('Room created successfully');
+      
+      // Refresh subscription status
+      if (orgId) {
+        checkSubscriptionStatus();
+      }
     } catch (error) {
       console.error('Error creating room:', error);
       toast.error('Failed to create room');
@@ -535,6 +607,43 @@ const QRRoomManager: React.FC = () => {
   
   return (
     <div className="space-y-6">
+      {/* Subscription Warning */}
+      {checkingSubscription ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+          <span>Checking subscription status...</span>
+        </div>
+      ) : subscriptionStatus && !subscriptionStatus.has_subscription ? (
+        <Card className="bg-amber-50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            <div>
+              <h3 className="font-medium">Subscription Required</h3>
+              <p className="text-sm">You need a subscription to create QR rooms. Visit the Subscription tab to choose a plan.</p>
+            </div>
+            <Button className="ml-auto" size="sm" onClick={() => setActiveTabId('subscription')}>
+              View Plans
+            </Button>
+          </CardContent>
+        </Card>
+      ) : subscriptionStatus && !subscriptionStatus.can_create_rooms && subscriptionStatus.is_active ? (
+        <Card className="bg-amber-50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            <div>
+              <h3 className="font-medium">Room Limit Reached</h3>
+              <p className="text-sm">
+                You've used {subscriptionStatus.rooms_count} of {subscriptionStatus.max_rooms} rooms in your plan.
+                Upgrade to create more rooms.
+              </p>
+            </div>
+            <Button className="ml-auto" size="sm" onClick={() => setActiveTabId('subscription')}>
+              Upgrade Plan
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+      
       {/* Room Cleaning Alerts */}
       <RoomAlerts 
         rooms={roomsNeedingAttention}
@@ -546,6 +655,7 @@ const QRRoomManager: React.FC = () => {
           <TabsTrigger value="rooms">Rooms & QR Codes</TabsTrigger>
           <TabsTrigger value="templates">Checklist Templates</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
           {selectedRoom && <TabsTrigger value="qrcode">View QR Code</TabsTrigger>}
         </TabsList>
         
@@ -554,7 +664,13 @@ const QRRoomManager: React.FC = () => {
             <h2 className="text-xl font-semibold">Manage Rooms</h2>
             <Dialog open={isCreateRoomOpen} onOpenChange={setIsCreateRoomOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button 
+                  disabled={!subscriptionStatus?.can_create_rooms}
+                  title={!subscriptionStatus?.can_create_rooms ? 
+                    "Subscribe or upgrade your plan to create rooms" : 
+                    "Create new room"
+                  }
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   New Room
                 </Button>
@@ -712,10 +828,16 @@ const QRRoomManager: React.FC = () => {
             ) : (
               <div className="col-span-full text-center p-8 bg-muted rounded-lg">
                 <p className="text-muted-foreground mb-4">No rooms created yet.</p>
-                <Button onClick={() => setIsCreateRoomOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add your first room
-                </Button>
+                {subscriptionStatus?.can_create_rooms ? (
+                  <Button onClick={() => setIsCreateRoomOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add your first room
+                  </Button>
+                ) : (
+                  <Button onClick={() => setActiveTabId('subscription')}>
+                    Subscribe to Add Rooms
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -819,6 +941,26 @@ const QRRoomManager: React.FC = () => {
               )}
             </div>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="subscription">
+          {orgId ? (
+            <SubscriptionPlans 
+              orgId={orgId} 
+              onSubscriptionChange={checkSubscriptionStatus}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Organization ID Not Found</h3>
+              <p className="text-muted-foreground mb-4">
+                To manage your subscription, you need to be logged in with an organization account.
+              </p>
+              <Button onClick={() => window.location.href = '/admin'}>
+                Go to Login
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
         {selectedRoom && (
