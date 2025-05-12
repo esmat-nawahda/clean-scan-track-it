@@ -98,17 +98,17 @@ const AdminSidebar = ({ onLogout, clientName, clientType, collapsed, toggleSideb
               </div>
             </NavLink>
             
-            <NavLink to="/admin/settings" className={getNavClass}>
-              <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
-                <Settings className="h-5 w-5" />
-                {!collapsed && <span className="ml-2 text-base">Settings</span>}
-              </div>
-            </NavLink>
-            
             <NavLink to="/admin/subscription" className={getNavClass}>
               <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
                 <CreditCard className="h-5 w-5" />
                 {!collapsed && <span className="ml-2 text-base">Subscription</span>}
+              </div>
+            </NavLink>
+            
+            <NavLink to="/admin/settings" className={getNavClass}>
+              <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
+                <Settings className="h-5 w-5" />
+                {!collapsed && <span className="ml-2 text-base">Settings</span>}
               </div>
             </NavLink>
           </div>
