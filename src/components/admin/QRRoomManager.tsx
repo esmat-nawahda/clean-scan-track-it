@@ -122,7 +122,7 @@ const QRRoomManager: React.FC = () => {
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select('*')
-        .eq('organization_id', orgId);
+        .eq('organization_id', orgId as string);
       
       if (locationsError) throw locationsError;
       
@@ -130,7 +130,7 @@ const QRRoomManager: React.FC = () => {
       const { data: templatesData, error: templatesError } = await supabase
         .from('checklist_templates')
         .select('*')
-        .eq('organization_id', orgId);
+        .eq('organization_id', orgId as string);
       
       if (templatesError) throw templatesError;
 
@@ -425,7 +425,6 @@ const QRRoomManager: React.FC = () => {
     return () => clearInterval(interval);
   }, [rooms, schedules]);
 
-  // Location management
   const handleNewLocationChange = (field: string, value: string) => {
     let id = newLocation.id;
     let code = newLocation.code;
@@ -914,4 +913,4 @@ const QRRoomManager: React.FC = () => {
                 </div>
                 
                 <DialogFooter>
-                  <Button variant
+                  <Button variant="
