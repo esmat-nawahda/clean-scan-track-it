@@ -3,9 +3,9 @@ import React from 'react';
 import { Building, Hotel, Hospital, Landmark, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ClientOrganizationType = 'Hotel' | 'Mall' | 'Hospital' | 'Office' | 'Demo';
+export type ClientOrganizationType = 'Hotel' | 'Mall' | 'Hospital' | 'Office' | 'Demo';
 
-interface ClientOrganization {
+export interface ClientOrganization {
   id: number;
   name: string;
   type: ClientOrganizationType;

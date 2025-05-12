@@ -1,15 +1,16 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Building, Hotel, Hospital, Store, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
-import ClientSelectionGrid from './ClientSelectionGrid';
+import { ClientOrganization, ClientOrganizationType } from './ClientSelectionGrid';
 
-// Mock client organizations data
-const clientOrganizations = [
+// Mock client organizations data with their access codes
+const clientOrganizations: ClientOrganization[] = [
   { id: 1, name: 'Luxury Grand Hotel', type: 'Hotel' },
   { id: 2, name: 'Westfield Shopping Center', type: 'Mall' },
   { id: 3, name: 'City General Hospital', type: 'Hospital' },
@@ -17,21 +18,74 @@ const clientOrganizations = [
   { id: 5, name: 'Demo Company', type: 'Demo' },
 ];
 
+// Client code to organization mapping
+const clientCodes: Record<string, number> = {
+  'HOTEL001': 1,
+  'MALL002': 2,
+  'HOSP003': 3,
+  'OFFICE004': 4,
+  'DEMO005': 5,
+};
+
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [clientCode, setClientCode] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'select-client' | 'enter-credentials'>('select-client');
+  const [showClientInfo, setShowClientInfo] = useState(false);
+  const [isCodeVerified, setIsCodeVerified] = useState(false);
 
-  const handleClientSelect = (clientId: number) => {
-    setSelectedClientId(clientId);
-    setStep('enter-credentials');
+  // Load saved client code from localStorage on component mount
+  useEffect(() => {
+    const savedClientCode = localStorage.getItem('spotlessqr-client-code');
+    if (savedClientCode) {
+      setClientCode(savedClientCode);
+    }
+  }, []);
+
+  const getClientIcon = (type: ClientOrganizationType | undefined) => {
+    if (!type) return <Building className="h-6 w-6 text-muted-foreground" />;
+    
+    switch (type) {
+      case 'Hotel':
+        return <Hotel className="h-6 w-6 text-blue-500" />;
+      case 'Hospital':
+        return <Hospital className="h-6 w-6 text-purple-500" />;
+      case 'Mall':
+        return <Store className="h-6 w-6 text-green-500" />;
+      case 'Office':
+        return <Building className="h-6 w-6 text-amber-500" />;
+      case 'Demo':
+        return <Landmark className="h-6 w-6 text-gray-500" />;
+    }
   };
 
-  const handleBackToClientSelect = () => {
-    setStep('select-client');
+  const handleVerifyCode = () => {
+    if (!clientCode) {
+      toast.error('Please enter a client code');
+      return;
+    }
+
+    const normalizedCode = clientCode.trim().toUpperCase();
+    const clientId = clientCodes[normalizedCode];
+
+    if (clientId) {
+      setSelectedClientId(clientId);
+      setShowClientInfo(true);
+      setIsCodeVerified(true);
+      localStorage.setItem('spotlessqr-client-code', normalizedCode);
+    } else {
+      toast.error('Invalid client code');
+      setIsCodeVerified(false);
+    }
+  };
+
+  const handleChangeCode = () => {
+    setShowClientInfo(false);
+    setIsCodeVerified(false);
+    setSelectedClientId(null);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -43,7 +97,7 @@ const AdminLogin = () => {
     }
 
     if (!selectedClientId) {
-      toast.error('Please select a client organization');
+      toast.error('Please enter a valid client code first');
       return;
     }
     
@@ -82,48 +136,70 @@ const AdminLogin = () => {
     }
   };
 
+  const selectedClient = clientOrganizations.find(client => client.id === selectedClientId);
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl">Admin Login</CardTitle>
         <CardDescription>
-          {step === 'select-client' 
-            ? 'Select your organization to continue'
+          {!showClientInfo 
+            ? 'Enter your organization code to continue'
             : 'Enter your credentials to access the admin dashboard'}
         </CardDescription>
       </CardHeader>
       
-      {step === 'select-client' ? (
-        <>
-          <CardContent>
-            <ClientSelectionGrid 
-              clients={clientOrganizations} 
-              onSelect={handleClientSelect} 
-              selectedClientId={selectedClientId} 
-            />
-          </CardContent>
-        </>
+      {!showClientInfo ? (
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="clientCode">Organization Code</Label>
+            <div className="flex gap-2">
+              <Input
+                id="clientCode"
+                placeholder="Enter your organization code"
+                value={clientCode}
+                onChange={(e) => setClientCode(e.target.value.toUpperCase())}
+                className="flex-1"
+              />
+              <Button 
+                type="button" 
+                onClick={handleVerifyCode}
+                disabled={!clientCode}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+          
+          <div className="bg-muted/50 p-3 rounded-md text-sm">
+            <p className="text-center text-muted-foreground">
+              For demo purposes, use any of these codes: <br/>
+              <span className="font-mono">HOTEL001</span>, <span className="font-mono">MALL002</span>, <span className="font-mono">HOSP003</span>, <span className="font-mono">OFFICE004</span>, or <span className="font-mono">DEMO005</span>
+            </p>
+          </div>
+        </CardContent>
       ) : (
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
-              <div className="flex-1">
-                <p className="text-sm font-medium">
-                  {clientOrganizations.find(client => client.id === selectedClientId)?.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {clientOrganizations.find(client => client.id === selectedClientId)?.type}
-                </p>
+            {selectedClient && (
+              <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
+                <div className="bg-background p-2 rounded">
+                  {getClientIcon(selectedClient.type)}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{selectedClient.name}</p>
+                  <p className="text-xs text-muted-foreground">{selectedClient.type}</p>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleChangeCode}
+                >
+                  Change
+                </Button>
               </div>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleBackToClientSelect}
-              >
-                Change
-              </Button>
-            </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
@@ -167,15 +243,17 @@ const AdminLogin = () => {
         </form>
       )}
       
-      <div className="px-8 pb-6 pt-2 text-center text-sm text-muted-foreground">
-        <p>
-          For demo purposes, use:
-          <br />
-          Username: <span className="font-mono">admin</span>
-          <br />
-          Password: <span className="font-mono">password</span>
-        </p>
-      </div>
+      {showClientInfo && (
+        <div className="px-8 pb-6 pt-2 text-center text-sm text-muted-foreground">
+          <p>
+            For demo purposes, use:
+            <br />
+            Username: <span className="font-mono">admin</span>
+            <br />
+            Password: <span className="font-mono">password</span>
+          </p>
+        </div>
+      )}
     </Card>
   );
 };
