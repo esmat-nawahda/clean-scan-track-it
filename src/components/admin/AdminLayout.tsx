@@ -105,7 +105,7 @@ const AdminSidebar = ({ onLogout, clientName, clientType, collapsed, toggleSideb
   const currentPath = location.pathname;
   
   const getNavClass = ({ isActive }: { isActive: boolean }) => 
-    isActive ? "bg-gray-800 text-white font-medium" : "hover:bg-accent/30";
+    isActive ? "bg-accent text-white font-medium" : "hover:bg-accent/30";
   
   return (
     <aside
