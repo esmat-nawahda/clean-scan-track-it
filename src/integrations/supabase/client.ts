@@ -8,21 +8,23 @@ export const supabase = {
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     getSession: () => Promise.resolve({ data: { session: null } }),
   },
-  from: () => ({
-    select: () => ({
-      eq: () => ({ data: [], error: null }),
-      in: () => ({ data: [], error: null }),
+  from: (table: string) => ({
+    select: (columns?: string) => ({
+      eq: (field: string, value: any) => Promise.resolve({ data: [], error: null }),
+      in: (field: string, values: any[]) => Promise.resolve({ data: [], error: null }),
+      order: (column: string, options: any) => Promise.resolve({ data: [], error: null }),
+      data: [],
+      error: null
     }),
-    insert: () => ({
-      select: () => ({
-        single: () => ({ data: null, error: null }),
+    insert: (data: any) => ({
+      select: (columns?: string) => ({
+        single: () => Promise.resolve({ data: null, error: null }),
       }),
     }),
-    update: () => ({
-      eq: () => ({ data: null, error: null }),
+    update: (data: any) => ({
+      eq: (field: string, value: any) => Promise.resolve({ data: null, error: null }),
     }),
   }),
-  // Add mock functions property to fix TS errors
   functions: {
     invoke: (functionName: string, options?: { body?: any }) => 
       Promise.resolve({ data: null, error: null })
