@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Check, Database, File as FileIcon, Settings, Users, QrCode, Building } from 'lucide-react';
+import { Check, Database, File as FileIcon, Settings, Users, QrCode, Building, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AdminSidebarProps {
@@ -60,6 +60,13 @@ const AdminSidebar = ({ onLogout, clientName, clientType, collapsed, toggleSideb
               <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
                 <Database className="h-5 w-5" />
                 {!collapsed && <span className="ml-2 text-base">Dashboard</span>}
+              </div>
+            </NavLink>
+            
+            <NavLink to="/admin/alerts" className={getNavClass}>
+              <div className={`flex items-center py-2 ${collapsed ? "justify-center px-2" : "px-3"}`}>
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                {!collapsed && <span className="ml-2 text-base">Alerts</span>}
               </div>
             </NavLink>
             

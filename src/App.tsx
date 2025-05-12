@@ -12,6 +12,7 @@ import SuccessPage from "./pages/SuccessPage";
 import AdminPage from "./pages/AdminPage";
 import AdminLayout from "./components/admin/AdminLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
+import AlertsPage from "./pages/admin/AlertsPage";
 import LocationsPage from "./pages/admin/LocationsPage";
 import StaffPage from "./pages/admin/StaffPage";
 import ReportsPage from "./pages/admin/ReportsPage";
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="alerts" element={<AlertsPage />} />
             <Route path="locations" element={<LocationsPage />} />
             <Route path="qr-management" element={<QRManagementPage />} />
             <Route path="staff" element={<StaffPage />} />
